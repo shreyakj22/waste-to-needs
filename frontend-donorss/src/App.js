@@ -1,4 +1,211 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+
+// =========================================================
+// --- AUTHENTICATION PAGE COMPONENT (Login/Register/Forgot) ---
+// =========================================================
+function AuthPage({ onLoginSuccess }) {
+    const [view, setView] = useState("login");
+    const [captcha, setCaptcha] = useState("");
+    const [loginEmail, setLoginEmail] = useState("");
+    const [loginPassword, setLoginPassword] = useState("");
+    const [loginCaptchaInput, setLoginCaptchaInput] = useState("");
+    const [registerName, setRegisterName] = useState("");
+    const [registerEmail, setRegisterEmail] = useState("");
+    const [registerPassword, setRegisterPassword] = useState("");
+    const [registerCaptchaInput, setRegisterCaptchaInput] = useState("");
+    const [resetEmail, setResetEmail] = useState("");
+
+    const generateCaptcha = () => {
+        const newCaptcha = Math.random().toString(36).substring(2, 8).toUpperCase();
+        setCaptcha(newCaptcha);
+    };
+
+    useEffect(() => {
+        generateCaptcha();
+    }, [view]); // Regenerate CAPTCHA when switching between login/register
+
+    const validateLogin = (e) => {
+        e.preventDefault();
+        if (captcha !== loginCaptchaInput.toUpperCase()) {
+            alert("CAPTCHA does not match!");
+            generateCaptcha();
+            return;
+        }
+        // Dummy successful login logic:
+        console.log("Login successful:", loginEmail);
+        onLoginSuccess(); // Call the prop function to update the parent App state
+    };
+
+    const validateRegister = (e) => {
+        e.preventDefault();
+        if (captcha !== registerCaptchaInput.toUpperCase()) {
+            alert("CAPTCHA does not match!");
+            generateCaptcha();
+            return;
+        }
+        // Dummy successful registration logic:
+        console.log("Registration successful:", registerEmail);
+        onLoginSuccess(); // Assume registration also logs the user in
+    };
+
+    const validateResetPassword = (e) => {
+        e.preventDefault();
+        console.log("Password reset link sent to:", resetEmail);
+        alert("Password reset link sent (dummy)");
+        setView("login");
+    };
+
+    const inputStyle = {
+        width: "100%",
+        padding: 10,
+        boxSizing: "border-box",
+        border: "1px solid #ddd",
+        borderRadius: 4,
+        marginBottom: 10,
+        fontSize: 14,
+    };
+
+    const buttonStyle = (color) => ({
+        marginTop: 15,
+        width: "100%",
+        padding: 10,
+        backgroundColor: color,
+        border: "none",
+        color: "#fff",
+        fontSize: 16,
+        fontWeight: "bold",
+        borderRadius: 4,
+        cursor: "pointer",
+        transition: "background-color 0.2s",
+    });
+
+    const captchaContainerStyle = {
+        display: "flex",
+        alignItems: "center",
+        marginBottom: 10,
+    };
+
+    const captchaBoxStyle = {
+        background: "#e8e8e8",
+        padding: "10px 15px",
+        fontWeight: "bold",
+        fontSize: "1.2em",
+        userSelect: "none",
+        borderRadius: 4,
+        letterSpacing: 2,
+    };
+
+    const linkStyle = {
+        textAlign: "center",
+        marginTop: 15,
+        fontSize: "0.9em",
+        color: "#16a34a",
+        cursor: "pointer",
+        textDecoration: "underline",
+    };
+    
+    const pageContainerStyle = {
+        fontFamily: "Arial, sans-serif",
+        background: "#f0f4f7",
+        minHeight: "100vh",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+    };
+
+    const cardStyle = {
+        width: 400,
+        background: "#fff",
+        padding: 40,
+        borderRadius: 8,
+        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+    };
+
+    return (
+        <div style={pageContainerStyle}>
+            <div style={cardStyle}>
+                {/* LOGIN VIEW */}
+                {view === "login" && (
+                    <>
+                        <h2 style={{ textAlign: "center", marginBottom: 30, color: '#16a34a' }}>WasteDonate Login</h2>
+                        <form onSubmit={validateLogin}>
+                            <label style={{ display: 'block', marginBottom: 5, fontWeight: 'bold' }}>Email:</label>
+                            <input type="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} required style={inputStyle} />
+
+                            <label style={{ display: 'block', marginBottom: 5, fontWeight: 'bold' }}>Password:</label>
+                            <input type="password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} required style={inputStyle} />
+
+                            <label style={{ display: 'block', marginBottom: 5, fontWeight: 'bold' }}>Enter CAPTCHA:</label>
+                            <div style={captchaContainerStyle}>
+                                <input type="text" value={loginCaptchaInput} onChange={(e) => setLoginCaptchaInput(e.target.value)} required style={{ ...inputStyle, flex: 1, marginRight: 10, marginBottom: 0 }} />
+                                <div style={captchaBoxStyle}>{captcha}</div>
+                            </div>
+
+                            <button type="submit" style={buttonStyle("#16a34a")} onMouseOver={(e) => (e.target.style.backgroundColor = "#149543")} onMouseOut={(e) => (e.target.style.backgroundColor = "#16a34a")}>
+                                Log In
+                            </button>
+                        </form>
+                        <div style={{ textAlign: "right", marginTop: 10, fontSize: "0.9em", color: "#555" }}>
+                            <span style={{ cursor: "pointer", color: "#2563eb" }} onClick={() => setView("forgot")}>Forgot Password?</span>
+                        </div>
+                        <div style={linkStyle} onClick={() => setView("register")}>
+                            Don't have an account? Register here
+                        </div>
+                    </>
+                )}
+
+                {/* REGISTER VIEW */}
+                {view === "register" && (
+                    <>
+                        <h2 style={{ textAlign: "center", marginBottom: 30, color: '#16a34a' }}>Create Account</h2>
+                        <form onSubmit={validateRegister}>
+                            <label style={{ display: 'block', marginBottom: 5, fontWeight: 'bold' }}>Name:</label>
+                            <input type="text" value={registerName} onChange={(e) => setRegisterName(e.target.value)} required style={inputStyle} />
+
+                            <label style={{ display: 'block', marginBottom: 5, fontWeight: 'bold', marginTop: 10 }}>Email:</label>
+                            <input type="email" value={registerEmail} onChange={(e) => setRegisterEmail(e.target.value)} required style={inputStyle} />
+
+                            <label style={{ display: 'block', marginBottom: 5, fontWeight: 'bold', marginTop: 10 }}>Password:</label>
+                            <input type="password" value={registerPassword} onChange={(e) => setRegisterPassword(e.target.value)} required style={inputStyle} />
+
+                            <label style={{ display: 'block', marginBottom: 5, fontWeight: 'bold', marginTop: 10 }}>Enter CAPTCHA:</label>
+                            <div style={captchaContainerStyle}>
+                                <input type="text" value={registerCaptchaInput} onChange={(e) => setRegisterCaptchaInput(e.target.value)} required style={{ ...inputStyle, flex: 1, marginRight: 10, marginBottom: 0 }} />
+                                <div style={captchaBoxStyle}>{captcha}</div>
+                            </div>
+
+                            <button type="submit" style={buttonStyle("#2563eb")} onMouseOver={(e) => (e.target.style.backgroundColor = "#1d4ed8")} onMouseOut={(e) => (e.target.style.backgroundColor = "#2563eb")}>
+                                Register
+                            </button>
+                        </form>
+                        <div style={linkStyle} onClick={() => setView("login")}>
+                            Already have an account? Log In
+                        </div>
+                    </>
+                )}
+
+                {/* FORGOT PASSWORD VIEW */}
+                {view === "forgot" && (
+                    <>
+                        <h2 style={{ textAlign: "center", marginBottom: 30, color: '#555' }}>Reset Password</h2>
+                        <form onSubmit={validateResetPassword}>
+                            <p style={{ fontSize: 14, color: '#555' }}>Enter your email address to receive a password reset link.</p>
+                            <label style={{ display: 'block', marginBottom: 5, fontWeight: 'bold' }}>Email:</label>
+                            <input type="email" value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} required style={inputStyle} />
+                            
+                            <button type="submit" style={buttonStyle("#f97316")} onMouseOver={(e) => (e.target.style.backgroundColor = "#ea580c")} onMouseOut={(e) => (e.target.style.backgroundColor = "#f97316")}>
+                                Send Reset Link
+                            </button>
+                        </form>
+                        <div style={linkStyle} onClick={() => setView("login")}>
+                            Back to Login
+                        </div>
+                    </>
+                )}
+            </div>
+        </div>
+    );
+}
 
 // =========================================================
 // --- 1. STYLES: Common Styles for all pages ---
@@ -479,7 +686,6 @@ function BrowsePage({ setCurrentPage }) {
 
 // =========================================================
 // --- 4. HOME PAGE COMPONENT ---
-// Includes the fix for the Start Donating button
 // =========================================================
 function HomePage({ setCurrentPage }) {
     const bgImage =
@@ -721,13 +927,26 @@ function HomePage({ setCurrentPage }) {
 
 
 // =========================================================
-// --- 5. MAIN APP COMPONENT (Handles Routing) ---
+// --- 5. MAIN APP COMPONENT (Handles Authentication & Routing) ---
 // =========================================================
 export default function App() {
+    // State to track authentication status
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
     // State to track which page is currently visible: 'home', 'browse', or 'donate'
     const [currentPage, setCurrentPage] = useState('home');
 
-    // Conditional rendering based on the currentPage state
+    // Callback function to set isLoggedIn to true upon successful login/register
+    const handleLoginSuccess = () => {
+        setIsLoggedIn(true);
+        setCurrentPage('home'); // Redirect to home page after login/register
+    };
+
+    // Conditional rendering: Show AuthPage if not logged in
+    if (!isLoggedIn) {
+        return <AuthPage onLoginSuccess={handleLoginSuccess} />;
+    }
+
+    // Conditional rendering: Show main app pages if logged in
     if (currentPage === 'browse') {
         return <BrowsePage setCurrentPage={setCurrentPage} />;
     }
