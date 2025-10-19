@@ -724,18 +724,18 @@ function HomePage({ setCurrentPage }) {
 // --- 5. MAIN APP COMPONENT (Handles Routing) ---
 // =========================================================
 export default function App() {
-    // State to track which page is currently visible: 'home', 'browse', or 'donate'
-    const [currentPage, setCurrentPage] = useState('home');
+  // 👇 Put it right here, at the top of the function
+  const [currentPage, setCurrentPage] = useState('auth');  // start from login page
 
-    // Conditional rendering based on the currentPage state
-    if (currentPage === 'browse') {
-        return <BrowsePage setCurrentPage={setCurrentPage} />;
-    }
+  if (currentPage === 'auth') {
+    return <AuthPage setCurrentPage={setCurrentPage} />;
+  }
+  if (currentPage === 'browse') {
+    return <BrowsePage setCurrentPage={setCurrentPage} />;
+  }
+  if (currentPage === 'donate') {
+    return <DonatePage setCurrentPage={setCurrentPage} />;
+  }
 
-    if (currentPage === 'donate') {
-        return <DonatePage setCurrentPage={setCurrentPage} />;
-    }
-
-    // Default: Render the Home Page
-    return <HomePage setCurrentPage={setCurrentPage} />;
+  return <HomePage setCurrentPage={setCurrentPage} />;
 }
