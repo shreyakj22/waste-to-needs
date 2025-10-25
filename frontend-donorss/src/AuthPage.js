@@ -29,6 +29,10 @@ export default function AuthPage({ setCurrentPage }) {
       return;
     }
     
+    // Store login state in localStorage
+    localStorage.setItem('isLoggedIn', 'true');
+    localStorage.setItem('userEmail', loginEmail);
+    
     setCurrentPage("home"); // ✅ Go to home page after login
   };
 
