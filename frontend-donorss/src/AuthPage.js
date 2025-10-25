@@ -70,7 +70,28 @@ export default function AuthPage({ setCurrentPage }) {
       >
         {view === "login" && (
           <>
-            <h2 style={{ textAlign: "center", marginBottom: 20 }}>Login</h2>
+            <h2 style={{ 
+              textAlign: "center", 
+              marginBottom: 20,
+              fontSize: "2.2em",
+              fontWeight: "700",
+              color: "#2c3e50",
+              textTransform: "uppercase",
+              letterSpacing: "2px",
+              textShadow: "2px 2px 4px rgba(0,0,0,0.1)"
+            }}>
+              Waste to Need
+            </h2>
+            <p style={{
+              textAlign: "center",
+              color: "#2c3e50",
+              marginBottom: "20px",
+              fontSize: "1.1em",
+              fontFamily: "Calibri, sans-serif",
+              fontWeight: "bold"
+            }}>
+              Please sign in to continue
+            </p>
             <form onSubmit={validateLogin}>
               <label>Email:</label>
               <input
