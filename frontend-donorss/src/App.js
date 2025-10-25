@@ -35,16 +35,29 @@ const commonStyles = {
     },
     navLinks: {
         display: "flex",
+        alignItems: "center",
         gap: "25px",
         fontSize: "14px",
     },
     link: (isActive) => ({
         textDecoration: "none",
         color: isActive ? "#16a34a" : "#333",
-        fontWeight: isActive ? "bold" : "500",
+        fontWeight: "400",
         transition: 'color 0.2s',
         cursor: 'pointer',
     }),
+    logoutBtn: {
+        backgroundColor: '#ef4444',
+        color: '#fff',
+        border: 'none',
+        padding: '6px 16px',
+        borderRadius: '6px',
+        cursor: 'pointer',
+        fontSize: '14px',
+        fontWeight: '600',
+        height: 'fit-content',
+        lineHeight: '1.5',
+    },
     footer: {
         backgroundColor: "#fff",
         padding: "10px",
@@ -145,6 +158,39 @@ const commonStyles = {
     }
 };
 
+// Inline Logo component (reliable, no external fetch)
+function Logo({ width = 30, height = 30 }) {
+    // Professional two-tone circular leaf badge SVG
+    const id = 'logoGrad';
+    return (
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width={width}
+            height={height}
+            viewBox="0 0 64 64"
+            aria-hidden="true"
+            focusable="false"
+        >
+            <defs>
+                <linearGradient id={id} x1="0%" x2="100%" y1="0%" y2="100%">
+                    <stop offset="0%" stopColor="#16a34a" />
+                    <stop offset="100%" stopColor="#10b981" />
+                </linearGradient>
+            </defs>
+            <rect width="64" height="64" rx="12" fill="#f3fbf6" />
+            <g transform="translate(8 8)">
+                <circle cx="24" cy="24" r="24" fill={`url(#${id})`} opacity="0.95" />
+                <g transform="translate(9 7) scale(0.7)" fill="#fff">
+                    <path d="M15.6 2.4c-4 0-9.2 4.8-11.6 8.3-.6 1-1 2.1-1 3.3 0 3.9 3.8 7.2 8.4 7.2 4.6 0 8.4-3.3 8.4-7.2 0-4.1-3.3-9.2-4.2-11.6-.2-.5-.7-1-1.4-1zM18 20.2c-1.3 1.1-3.4 2.3-6.6 2.3-3.9 0-7.6-1.9-9.2-4.8 2.4 1.4 5.6 2.3 8.7 2.3 4.1 0 7.2-1.3 7.9-1.8z" />
+                </g>
+                <g transform="translate(6 6)" fill="#fff">
+                    <path d="M10 2c-1.1 0-2 .9-2 2 0 3 2 5 5 6 0 0-1.5-3.2-1.5-6C11.5 3 11 2 10 2z" opacity="0.9" />
+                </g>
+            </g>
+        </svg>
+    );
+}
+
 // =========================================================
 // --- 2. DONATE PAGE COMPONENT ---
 // Renders the form based on the screenshot
@@ -158,6 +204,8 @@ function DonatePage({ setCurrentPage }) {
         pickupLocation: '',
         contactInformation: '',
     });
+    const [selectedFiles, setSelectedFiles] = useState([]);
+    const [previews, setPreviews] = useState([]);
 
     const categories = ['Furniture', 'Electronics', 'Books', 'Clothing', 'Other'];
     const conditions = ['New', 'Good', 'Fair', 'Needs Repair'];
@@ -221,11 +269,36 @@ function DonatePage({ setCurrentPage }) {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
+    const handleFileUpload = (e) => {
+        const files = Array.from(e.target.files);
+        
+        // Filter for image files only
+        const imageFiles = files.filter(file => file.type.startsWith('image/'));
+        
+        // Create preview URLs
+        const newPreviews = imageFiles.map(file => URL.createObjectURL(file));
+        
+        setSelectedFiles(prev => [...prev, ...imageFiles]);
+        setPreviews(prev => [...prev, ...newPreviews]);
+    };
+
+    const removePhoto = (index) => {
+        setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+        setPreviews(prev => {
+            // Revoke the URL to prevent memory leaks
+            URL.revokeObjectURL(prev[index]);
+            return prev.filter((_, i) => i !== index);
+        });
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
         // Placeholder for API submission logic
-        console.log("Donation Submitted:", formData);
+        console.log("Donation Submitted:", { ...formData, photos: selectedFiles });
         alert('Item submitted for donation! Thank you.');
+        
+        // Cleanup preview URLs
+        previews.forEach(url => URL.revokeObjectURL(url));
         setCurrentPage('home');
     };
 
@@ -235,18 +308,23 @@ function DonatePage({ setCurrentPage }) {
             {/* Navbar */}
             <nav style={commonStyles.navbar}>
                 <div onClick={() => setCurrentPage('home')} style={commonStyles.logo}>
-                    <img
-                        src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Recycle_logo_green.svg/1200px-Recycle_logo_green.svg.png"
-                        alt="logo"
-                        width="30"
-                        height="30"
-                    />
+                        <Logo width={30} height={30} />
                     WasteDonate
                 </div>
                 <div style={commonStyles.navLinks}>
                     <div onClick={() => setCurrentPage('browse')} style={commonStyles.link(false)}> Browse Items </div>
                     <div onClick={() => setCurrentPage('donate')} style={commonStyles.link(true)}> Donate Items </div>
                     <a href="#" style={commonStyles.link(false)}> About </a>
+                    <button 
+                        onClick={() => {
+                            localStorage.removeItem('isLoggedIn');
+                            localStorage.removeItem('userEmail');
+                            setCurrentPage('auth');
+                        }} 
+                        style={commonStyles.logoutBtn}
+                    >
+                        Logout
+                    </button>
                 </div>
             </nav>
 
@@ -327,17 +405,84 @@ function DonatePage({ setCurrentPage }) {
                         </small>
                     </div>
 
-                    {/* Photos Upload (Simplified Placeholder) */}
+                    {/* Photos Upload Section */}
                     <div style={styles.formGroup}>
                         <label style={commonStyles.formLabel}>
                             Photos (Optional but recommended)
                         </label>
-                        <div style={styles.photoUploadBox}>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={handleFileUpload}
+                            style={{ display: 'none' }}
+                            id="photo-upload"
+                        />
+                        <label htmlFor="photo-upload" style={{
+                            ...styles.photoUploadBox,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}>
+                            <div style={{ fontSize: '24px', marginBottom: '8px' }}>📸</div>
                             <p style={{ margin: '0 0 5px 0', fontWeight: 'bold' }}>Click to upload photos</p>
                             <p style={{ margin: 0, fontSize: '12px', color: '#888' }}>
-                                PNG, JPG up to 10MB each
+                                PNG, JPG up to 10MB each (Max 5 photos)
                             </p>
-                        </div>
+                        </label>
+
+                        {/* Photo Previews */}
+                        {previews.length > 0 && (
+                            <div style={{
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
+                                gap: '10px',
+                                marginTop: '15px'
+                            }}>
+                                {previews.map((preview, index) => (
+                                    <div key={index} style={{
+                                        position: 'relative',
+                                        aspectRatio: '1',
+                                        borderRadius: '8px',
+                                        overflow: 'hidden'
+                                    }}>
+                                        <img
+                                            src={preview}
+                                            alt={`Preview ${index + 1}`}
+                                            style={{
+                                                width: '100%',
+                                                height: '100%',
+                                                objectFit: 'cover'
+                                            }}
+                                        />
+                                        <button
+                                            onClick={() => removePhoto(index)}
+                                            style={{
+                                                position: 'absolute',
+                                                top: '5px',
+                                                right: '5px',
+                                                backgroundColor: 'rgba(0,0,0,0.5)',
+                                                color: '#fff',
+                                                border: 'none',
+                                                borderRadius: '50%',
+                                                width: '24px',
+                                                height: '24px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                cursor: 'pointer',
+                                                fontSize: '14px'
+                                            }}
+                                            type="button"
+                                        >
+                                            ×
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                     {/* Pickup Location */}
@@ -403,6 +548,7 @@ function DonatePage({ setCurrentPage }) {
 // --- 3. BROWSE PAGE COMPONENT ---
 // =========================================================
 function BrowsePage({ setCurrentPage }) {
+
     const pageContentStyle = {
         padding: '40px 20px',
         maxWidth: '1200px',
@@ -416,18 +562,23 @@ function BrowsePage({ setCurrentPage }) {
             {/* Navbar */}
             <nav style={commonStyles.navbar}>
                 <div onClick={() => setCurrentPage('home')} style={commonStyles.logo}>
-                    <img
-                        src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Recycle_logo_green.svg/1200px-Recycle_logo_green.svg.png"
-                        alt="logo"
-                        width="30"
-                        height="30"
-                    />
+                        <Logo width={30} height={30} />
                     WasteDonate
                 </div>
                 <div style={commonStyles.navLinks}>
                     <div onClick={() => setCurrentPage('browse')} style={commonStyles.link(true)}> Browse Items </div>
                     <div onClick={() => setCurrentPage('donate')} style={commonStyles.link(false)}> Donate Items </div>
                     <a href="#" style={commonStyles.link(false)}> About </a>
+                    <button 
+                        onClick={() => {
+                            localStorage.removeItem('isLoggedIn');
+                            localStorage.removeItem('userEmail');
+                            setCurrentPage('auth');
+                        }} 
+                        style={commonStyles.logoutBtn}
+                    >
+                        Logout
+                    </button>
                 </div>
             </nav>
 
@@ -621,12 +772,7 @@ function HomePage({ setCurrentPage }) {
             {/* Navbar */}
             <nav style={styles.navbar}>
                 <div onClick={() => setCurrentPage('home')} style={styles.logo}>
-                    <img
-                        src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Recycle_logo_green.svg/1200px-Recycle_logo_green.svg.png"
-                        alt="logo"
-                        width="30"
-                        height="30"
-                    />
+                        <Logo width={30} height={30} />
                     WasteDonate
                 </div>
                 <div style={styles.navLinks}>
@@ -635,6 +781,16 @@ function HomePage({ setCurrentPage }) {
                     </div>
                     <div onClick={() => setCurrentPage('donate')} style={styles.link(false)}> Donate Items </div>
                     <a href="#" style={styles.link(false)}> About </a>
+                    <button 
+                        onClick={() => {
+                            localStorage.removeItem('isLoggedIn');
+                            localStorage.removeItem('userEmail');
+                            setCurrentPage('auth');
+                        }} 
+                        style={commonStyles.logoutBtn}
+                    >
+                        Logout
+                    </button>
                 </div>
             </nav>
 
@@ -724,8 +880,11 @@ function HomePage({ setCurrentPage }) {
 // --- 5. MAIN APP COMPONENT (Handles Routing) ---
 // =========================================================
 export default function App() {
-  // 👇 Put it right here, at the top of the function
-  const [currentPage, setCurrentPage] = useState('auth');  // start from login page
+  // Check localStorage for auth state on initial load
+  const [currentPage, setCurrentPage] = useState(() => {
+    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+    return isLoggedIn ? 'home' : 'auth';
+  });
 
   if (currentPage === 'auth') {
     return <AuthPage setCurrentPage={setCurrentPage} />;
