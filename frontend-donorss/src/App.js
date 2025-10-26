@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import AuthPage from './AuthPage';
 // =========================================================
 // --- 1. STYLES: Common Styles for all pages ---
@@ -293,13 +293,40 @@ function DonatePage({ setCurrentPage }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        // Placeholder for API submission logic
-        console.log("Donation Submitted:", { ...formData, photos: selectedFiles });
-        alert('Item submitted for donation! Thank you.');
         
-        // Cleanup preview URLs
-        previews.forEach(url => URL.revokeObjectURL(url));
-        setCurrentPage('home');
+        // Convert selected files to Base64
+        const promises = selectedFiles.map(file => {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        });
+
+        Promise.all(promises).then(base64files => {
+            // Create donation object
+            const donation = {
+                ...formData,
+                id: Date.now(), // unique ID
+                photos: base64files,
+                status: 'available',
+                datePosted: new Date().toISOString(),
+                donorEmail: localStorage.getItem('userEmail')
+            };
+
+            // Get existing donations from localStorage
+            const existingDonations = JSON.parse(localStorage.getItem('donations') || '[]');
+            
+            // Add new donation
+            localStorage.setItem('donations', JSON.stringify([...existingDonations, donation]));
+
+            // Cleanup preview URLs
+            previews.forEach(url => URL.revokeObjectURL(url));
+            
+            alert('Item submitted for donation! Thank you.');
+            setCurrentPage('browse');
+        });
     };
 
     return (
@@ -548,12 +575,77 @@ function DonatePage({ setCurrentPage }) {
 // --- 3. BROWSE PAGE COMPONENT ---
 // =========================================================
 function BrowsePage({ setCurrentPage }) {
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState('All');
+    const [donations, setDonations] = useState([]);
+
+    // Load donations when component mounts
+    useEffect(() => {
+        const loadedDonations = JSON.parse(localStorage.getItem('donations') || '[]');
+        setDonations(loadedDonations);
+    }, []);
+
+    // Filter donations based on search query and category
+    const filteredDonations = donations.filter(donation => {
+        const matchesSearch = donation.itemTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            donation.description.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesCategory = selectedCategory === 'All' || donation.category === selectedCategory;
+        return matchesSearch && matchesCategory && donation.status === 'available';
+    });
+
+    const handleRequest = (donationId) => {
+        const userEmail = localStorage.getItem('userEmail');
+        const updatedDonations = donations.map(donation => {
+            if (donation.id === donationId) {
+                return {
+                    ...donation,
+                    status: 'requested',
+                    requestedBy: userEmail,
+                    requestDate: new Date().toISOString()
+                };
+            }
+            return donation;
+        });
+
+        localStorage.setItem('donations', JSON.stringify(updatedDonations));
+        setDonations(updatedDonations);
+        
+        // Get donor's contact information
+        const donation = donations.find(d => d.id === donationId);
+        alert(`Request sent! You can contact the donor at: ${donation.contactInformation}`);
+    };
 
     const pageContentStyle = {
         padding: '40px 20px',
         maxWidth: '1200px',
         margin: '0 auto',
         flexGrow: 1,
+    };
+
+    const itemCardStyle = {
+        backgroundColor: '#fff',
+        borderRadius: '8px',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+    };
+
+    const itemGridStyle = {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+        gap: '20px',
+        padding: '20px 0',
+    };
+
+    const imageStyle = {
+        width: '100%',
+        height: '200px',
+        objectFit: 'cover',
+    };
+
+    const contentStyle = {
+        padding: '15px',
     };
 
     return (
@@ -599,25 +691,88 @@ function BrowsePage({ setCurrentPage }) {
                             type="text"
                             placeholder="Search items..."
                             style={commonStyles.searchInput}
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
                         />
-                        <select style={commonStyles.selectDropdown}>
+                        <select 
+                            style={commonStyles.selectDropdown}
+                            value={selectedCategory}
+                            onChange={(e) => setSelectedCategory(e.target.value)}
+                        >
                             <option>All</option>
                             <option>Furniture</option>
                             <option>Electronics</option>
                             <option>Books</option>
+                            <option>Clothing</option>
+                            <option>Other</option>
                         </select>
                     </div>
                 </div>
 
                 {/* Item Count */}
                 <p style={{ textAlign: 'left', margin: '20px 0', fontSize: '14px', color: '#555' }}>
-                    Showing 0 items
+                    Showing {filteredDonations.length} items
                 </p>
 
-                {/* Placeholder for Item Cards */}
-                <div style={{ textAlign: 'center', padding: '50px', color: '#999' }}>
-                    No items currently available.
-                </div>
+                {/* Item Grid */}
+                {filteredDonations.length > 0 ? (
+                    <div style={itemGridStyle}>
+                        {filteredDonations.map(donation => (
+                            <div key={donation.id} style={itemCardStyle}>
+                                {donation.photos && donation.photos.length > 0 && (
+                                    <img
+                                        src={donation.photos[0]}
+                                        alt={donation.itemTitle}
+                                        style={imageStyle}
+                                    />
+                                )}
+                                <div style={contentStyle}>
+                                    <h3 style={{ margin: '0 0 8px 0', fontSize: '18px' }}>{donation.itemTitle}</h3>
+                                    <p style={{ margin: '0 0 8px 0', color: '#666', fontSize: '14px' }}>
+                                        {donation.description.length > 100 
+                                            ? donation.description.substring(0, 100) + '...'
+                                            : donation.description}
+                                    </p>
+                                    <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                                        <span style={{ 
+                                            padding: '4px 8px', 
+                                            backgroundColor: '#e5e7eb', 
+                                            borderRadius: '4px', 
+                                            fontSize: '12px' 
+                                        }}>
+                                            {donation.category}
+                                        </span>
+                                        <span style={{ 
+                                            padding: '4px 8px', 
+                                            backgroundColor: '#e5e7eb', 
+                                            borderRadius: '4px', 
+                                            fontSize: '12px' 
+                                        }}>
+                                            {donation.condition}
+                                        </span>
+                                    </div>
+                                    <p style={{ margin: '0 0 8px 0', fontSize: '14px' }}>
+                                        📍 {donation.pickupLocation}
+                                    </p>
+                                    <button
+                                        onClick={() => handleRequest(donation.id)}
+                                        style={{
+                                            ...commonStyles.button('#16a34a'),
+                                            width: '100%',
+                                            marginTop: '10px'
+                                        }}
+                                    >
+                                        Request Item
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div style={{ textAlign: 'center', padding: '50px', color: '#999' }}>
+                        No items currently available.
+                    </div>
+                )}
             </div>
 
             {/* Footer */}
