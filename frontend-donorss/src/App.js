@@ -1,6 +1,9 @@
 
 import React, { useState, useEffect } from "react";
 import AuthPage from './AuthPage';
+
+// API base (can be overridden by frontend-donorss/.env)
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 // =========================================================
 // --- 1. STYLES: Common Styles for all pages ---
 // =========================================================
@@ -302,28 +305,41 @@ function DonatePage({ setCurrentPage }) {
             });
         });
 
-        Promise.all(promises).then(base64files => {
-            // Create donation object
+        Promise.all(promises).then(async base64files => {
             const donation = {
                 ...formData,
-                id: Date.now(), // unique ID
+                // client-side id; server will assign _id
+                id: Date.now(),
                 photos: base64files,
                 status: 'available',
                 datePosted: new Date().toISOString(),
                 donorEmail: localStorage.getItem('userEmail')
             };
 
-            // Get existing donations from localStorage
-            const existingDonations = JSON.parse(localStorage.getItem('donations') || '[]');
-            
-            // Add new donation
-            localStorage.setItem('donations', JSON.stringify([...existingDonations, donation]));
+            // Try to POST to backend; fallback to localStorage on failure
+            try {
+                const res = await fetch(`${API_BASE}/api/donations`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(donation),
+                });
 
-            // Cleanup preview URLs
-            previews.forEach(url => URL.revokeObjectURL(url));
-            
-            alert('Item submitted for donation! Thank you.');
-            setCurrentPage('browse');
+                if (!res.ok) throw new Error(`server returned ${res.status}`);
+
+                // success: cleanup and navigate to browse
+                previews.forEach(url => URL.revokeObjectURL(url));
+                alert('Item submitted and saved to server — thank you!');
+                setCurrentPage('browse');
+                return;
+            } catch (err) {
+                console.warn('POST failed, saving locally:', err);
+                const existingDonations = JSON.parse(localStorage.getItem('donations') || '[]');
+                localStorage.setItem('donations', JSON.stringify([...existingDonations, donation]));
+
+                previews.forEach(url => URL.revokeObjectURL(url));
+                alert('Unable to reach server — item saved locally and will be uploaded when online.');
+                setCurrentPage('browse');
+            }
         });
     };
 
@@ -577,10 +593,42 @@ function BrowsePage({ setCurrentPage }) {
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [donations, setDonations] = useState([]);
 
-    // Load donations when component mounts
+    // Load donations from backend when component mounts, fallback to localStorage
     useEffect(() => {
-        const loadedDonations = JSON.parse(localStorage.getItem('donations') || '[]');
-        setDonations(loadedDonations);
+        let mounted = true;
+
+        const normalize = (d) => ({
+            id: d._id || d.id || String(d.id || Date.now()),
+            itemTitle: d.itemTitle || d.title || '',
+            description: d.description || '',
+            category: d.category || 'Other',
+            condition: d.condition || '',
+            pickupLocation: d.pickupLocation || '',
+            contactInformation: d.contactInformation || '',
+            photos: d.photos || [],
+            status: d.status || 'available',
+            donorEmail: d.donorEmail || '',
+            datePosted: d.datePosted || new Date().toISOString(),
+            ...d,
+        });
+
+        (async () => {
+            try {
+                const res = await fetch(`${API_BASE}/api/donations`);
+                if (!res.ok) throw new Error('bad response');
+                const body = await res.json();
+                const serverDonations = body.donations || body || [];
+                const normalized = serverDonations.map(normalize);
+                if (mounted) setDonations(normalized);
+            } catch (err) {
+                // fallback to localStorage
+                const loadedDonations = JSON.parse(localStorage.getItem('donations') || '[]');
+                const normalized = (loadedDonations || []).map(normalize);
+                if (mounted) setDonations(normalized);
+            }
+        })();
+
+        return () => { mounted = false };
     }, []);
 
     // Filter donations based on search query and category
