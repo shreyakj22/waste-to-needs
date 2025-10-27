@@ -1,6 +1,9 @@
 
 import React, { useState, useEffect } from "react";
 import AuthPage from './AuthPage';
+
+// API base - set REACT_APP_API_URL in frontend env to override
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 // =========================================================
 // --- 1. STYLES: Common Styles for all pages ---
 // =========================================================
@@ -301,29 +304,44 @@ function DonatePage({ setCurrentPage }) {
                 reader.onerror = error => reject(error);
             });
         });
-
-        Promise.all(promises).then(base64files => {
+        Promise.all(promises).then(async (base64files) => {
             // Create donation object
             const donation = {
                 ...formData,
-                id: Date.now(), // unique ID
                 photos: base64files,
                 status: 'available',
-                datePosted: new Date().toISOString(),
                 donorEmail: localStorage.getItem('userEmail')
             };
 
-            // Get existing donations from localStorage
-            const existingDonations = JSON.parse(localStorage.getItem('donations') || '[]');
-            
-            // Add new donation
-            localStorage.setItem('donations', JSON.stringify([...existingDonations, donation]));
+            // Try to POST to backend. If it fails, fall back to localStorage.
+            try {
+                const res = await fetch("https://waste-to-needs-2.onrender.com", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(donation)
+                });
 
-            // Cleanup preview URLs
-            previews.forEach(url => URL.revokeObjectURL(url));
-            
-            alert('Item submitted for donation! Thank you.');
-            setCurrentPage('browse');
+                if (!res.ok) throw new Error('Server error');
+
+                // Cleanup preview URLs
+                previews.forEach(url => URL.revokeObjectURL(url));
+
+                alert('Item submitted for donation! Thank you.');
+                setCurrentPage('browse');
+            } catch (err) {
+                console.warn('POST to backend failed, saving locally as fallback:', err);
+                // Fallback: store in localStorage
+                const existingDonations = JSON.parse(localStorage.getItem('donations') || '[]');
+                // add an id for frontend usage
+                const donationWithId = { ...donation, id: Date.now(), datePosted: new Date().toISOString() };
+                localStorage.setItem('donations', JSON.stringify([...existingDonations, donationWithId]));
+
+                // Cleanup preview URLs
+                previews.forEach(url => URL.revokeObjectURL(url));
+
+                alert('Item saved locally (offline). It will be uploaded when the server is available.');
+                setCurrentPage('browse');
+            }
         });
     };
 
@@ -339,7 +357,6 @@ function DonatePage({ setCurrentPage }) {
                 <div style={commonStyles.navLinks}>
                     <div onClick={() => setCurrentPage('browse')} style={commonStyles.link(false)}> Browse Items </div>
                     <div onClick={() => setCurrentPage('donate')} style={commonStyles.link(true)}> Donate Items </div>
-                    <a href="#" style={commonStyles.link(false)}> About </a>
                     <button 
                         onClick={() => {
                             localStorage.removeItem('isLoggedIn');
@@ -579,8 +596,22 @@ function BrowsePage({ setCurrentPage }) {
 
     // Load donations when component mounts
     useEffect(() => {
-        const loadedDonations = JSON.parse(localStorage.getItem('donations') || '[]');
-        setDonations(loadedDonations);
+        let mounted = true;
+        const fetchDonations = async () => {
+            try {
+                const res = await fetch(`${API_BASE}/api/donations`);
+                if (!res.ok) throw new Error('Failed to fetch');
+                const data = await res.json();
+                if (mounted) setDonations(data);
+            } catch (err) {
+                console.warn('Could not fetch donations from server, falling back to localStorage', err);
+                const loadedDonations = JSON.parse(localStorage.getItem('donations') || '[]');
+                if (mounted) setDonations(loadedDonations);
+            }
+        };
+
+        fetchDonations();
+        return () => { mounted = false };
     }, []);
 
     // Filter donations based on search query and category
@@ -658,7 +689,6 @@ function BrowsePage({ setCurrentPage }) {
                 <div style={commonStyles.navLinks}>
                     <div onClick={() => setCurrentPage('browse')} style={commonStyles.link(true)}> Browse Items </div>
                     <div onClick={() => setCurrentPage('donate')} style={commonStyles.link(false)}> Donate Items </div>
-                    <a href="#" style={commonStyles.link(false)}> About </a>
                     <button 
                         onClick={() => {
                             localStorage.removeItem('isLoggedIn');
@@ -933,7 +963,6 @@ function HomePage({ setCurrentPage }) {
                         Browse Items
                     </div>
                     <div onClick={() => setCurrentPage('donate')} style={styles.link(false)}> Donate Items </div>
-                    <a href="#" style={styles.link(false)}> About </a>
                     <button 
                         onClick={() => {
                             localStorage.removeItem('isLoggedIn');
