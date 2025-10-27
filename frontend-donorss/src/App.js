@@ -619,6 +619,33 @@ function BrowsePage({ setCurrentPage }) {
                 const body = await res.json();
                 const serverDonations = body.donations || body || [];
                 const normalized = serverDonations.map(normalize);
+
+                // If we have locally saved donations (offline fallback), try to sync them now
+                try {
+                    const local = JSON.parse(localStorage.getItem('donations') || '[]');
+                    if (Array.isArray(local) && local.length > 0) {
+                        console.log('Browse: found', local.length, 'local donations — attempting bulk sync');
+                        const syncRes = await fetch(`${API_BASE}/api/donations/bulk`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ donations: local }),
+                        });
+                        if (syncRes.ok) {
+                            console.log('Browse: bulk sync succeeded — clearing localStorage');
+                            localStorage.removeItem('donations');
+                            // re-fetch server list to include synced items
+                            const refreshed = await (await fetch(`${API_BASE}/api/donations`)).json();
+                            const refreshedList = (refreshed.donations || refreshed || []).map(normalize);
+                            if (mounted) setDonations(refreshedList);
+                            return;
+                        } else {
+                            console.warn('Browse: bulk sync responded with', syncRes.status);
+                        }
+                    }
+                } catch (syncErr) {
+                    console.warn('Browse: bulk sync failed', syncErr);
+                }
+
                 if (mounted) setDonations(normalized);
             } catch (err) {
                 // fallback to localStorage
