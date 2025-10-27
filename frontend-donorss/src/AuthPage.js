@@ -29,6 +29,10 @@ export default function AuthPage({ setCurrentPage }) {
       return;
     }
     
+    // Store login state in localStorage
+    localStorage.setItem('isLoggedIn', 'true');
+    localStorage.setItem('userEmail', loginEmail);
+    
     setCurrentPage("home"); // ✅ Go to home page after login
   };
 
@@ -70,9 +74,30 @@ export default function AuthPage({ setCurrentPage }) {
       >
         {view === "login" && (
           <>
-            <h2 style={{ textAlign: "center", marginBottom: 20 }}>Login</h2>
+            <h2 style={{ 
+              textAlign: "center", 
+              marginBottom: 20,
+              fontSize: "2.2em",
+              fontWeight: "700",
+              color: "#2c3e50",
+              textTransform: "uppercase",
+              letterSpacing: "2px",
+              textShadow: "2px 2px 4px rgba(0,0,0,0.1)"
+            }}>
+              waste-2-need
+            </h2>
+            <p style={{
+              textAlign: "center",
+              color: "#2c3e50",
+              marginBottom: "20px",
+              fontSize: "1.1em",
+              fontFamily: "Calibri, sans-serif",
+              fontWeight: "bold"
+            }}>
+              Please sign in to continue
+            </p>
             <form onSubmit={validateLogin}>
-              <label>Email:</label>
+              <label style={{ fontWeight: "bold", fontSize: "1.05em", paddingBottom: 6, display: "block" }}>Email:</label>
               <input
                 type="email"
                 value={loginEmail}
@@ -81,7 +106,7 @@ export default function AuthPage({ setCurrentPage }) {
                 style={{ width: "100%", padding: 8, boxSizing: "border-box" }}
               />
 
-              <label style={{ marginTop: 10 }}>Password:</label>
+              <label style={{ fontWeight: "bold", fontSize: "1.05em", marginTop: 16, paddingBottom: 6, display: "block" }}>Password:</label>
               <input
                 type="password"
                 value={loginPassword}
@@ -90,7 +115,7 @@ export default function AuthPage({ setCurrentPage }) {
                 style={{ width: "100%", padding: 8, boxSizing: "border-box" }}
               />
 
-              <label style={{ marginTop: 10 }}>Enter CAPTCHA:</label>
+              <label style={{ fontWeight: "bold", fontSize: "1.05em", marginTop: 16, paddingBottom: 6, display: "block" }}>Enter CAPTCHA:</label>
               <div style={{ display: "flex", alignItems: "center" }}>
                 <input
                   type="text"
@@ -123,6 +148,7 @@ export default function AuthPage({ setCurrentPage }) {
                   color: "#fff",
                   fontSize: 16,
                   cursor: "pointer",
+                  fontWeight: "bold"
                 }}
                 onMouseOver={(e) =>
                   (e.target.style.backgroundColor = "#1e7e34")
@@ -164,9 +190,20 @@ export default function AuthPage({ setCurrentPage }) {
 
         {view === "register" && (
           <>
-            <h2 style={{ textAlign: "center", marginBottom: 20 }}>Register</h2>
+            <h2 style={{ 
+              textAlign: "center", 
+              marginBottom: 20,
+              fontSize: "2.2em",
+              fontWeight: "700",
+              color: "#2c3e50",
+              textTransform: "uppercase",
+              letterSpacing: "2px",
+              textShadow: "2px 2px 4px rgba(0,0,0,0.1)"
+            }}>
+              Register
+            </h2>
             <form onSubmit={validateRegister}>
-              <label>Name:</label>
+              <label style={{ fontWeight: "bold", fontSize: "1.05em", paddingBottom: 6, display: "block" }}>Name:</label>
               <input
                 type="text"
                 value={registerName}
@@ -175,7 +212,7 @@ export default function AuthPage({ setCurrentPage }) {
                 style={{ width: "100%", padding: 8, boxSizing: "border-box" }}
               />
 
-              <label style={{ marginTop: 10 }}>Email:</label>
+              <label style={{ fontWeight: "bold", fontSize: "1.05em", marginTop: 16, paddingBottom: 6, display: "block" }}>Email:</label>
               <input
                 type="email"
                 value={registerEmail}
@@ -184,7 +221,7 @@ export default function AuthPage({ setCurrentPage }) {
                 style={{ width: "100%", padding: 8, boxSizing: "border-box" }}
               />
 
-              <label style={{ marginTop: 10 }}>Password:</label>
+              <label style={{ fontWeight: "bold", fontSize: "1.05em", marginTop: 16, paddingBottom: 6, display: "block" }}>Password:</label>
               <input
                 type="password"
                 value={registerPassword}
@@ -193,7 +230,7 @@ export default function AuthPage({ setCurrentPage }) {
                 style={{ width: "100%", padding: 8, boxSizing: "border-box" }}
               />
 
-              <label style={{ marginTop: 10 }}>Enter CAPTCHA:</label>
+              <label style={{ fontWeight: "bold", fontSize: "1.05em", marginTop: 16, paddingBottom: 6, display: "block" }}>Enter CAPTCHA:</label>
               <div style={{ display: "flex", alignItems: "center" }}>
                 <input
                   type="text"
@@ -226,6 +263,7 @@ export default function AuthPage({ setCurrentPage }) {
                   color: "#fff",
                   fontSize: 16,
                   cursor: "pointer",
+                  fontWeight: "bold"
                 }}
                 onMouseOver={(e) =>
                   (e.target.style.backgroundColor = "#1e7e34")
