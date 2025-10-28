@@ -355,7 +355,7 @@ function DonatePage({ setCurrentPage }) {
                 <div style={commonStyles.navLinks}>
                     <div onClick={() => setCurrentPage('browse')} style={commonStyles.link(false)}> Browse Items </div>
                     <div onClick={() => setCurrentPage('donate')} style={commonStyles.link(true)}> Donate Items </div>
-                    <a href="#" style={commonStyles.link(false)}> About </a>
+                    {/* About link removed */}
                     <button 
                         onClick={() => {
                             localStorage.removeItem('isLoggedIn');
@@ -733,7 +733,7 @@ function BrowsePage({ setCurrentPage }) {
                 <div style={commonStyles.navLinks}>
                     <div onClick={() => setCurrentPage('browse')} style={commonStyles.link(true)}> Browse Items </div>
                     <div onClick={() => setCurrentPage('donate')} style={commonStyles.link(false)}> Donate Items </div>
-                    <a href="#" style={commonStyles.link(false)}> About </a>
+                    {/* About link removed */}
                     <button 
                         onClick={() => {
                             localStorage.removeItem('isLoggedIn');
@@ -1008,7 +1008,7 @@ function HomePage({ setCurrentPage }) {
                         Browse Items
                     </div>
                     <div onClick={() => setCurrentPage('donate')} style={styles.link(false)}> Donate Items </div>
-                    <a href="#" style={styles.link(false)}> About </a>
+                    {/* About link removed */}
                     <button 
                         onClick={() => {
                             localStorage.removeItem('isLoggedIn');
