@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
+import User from "./models/User.js";
 dotenv.config();
 const app = express();
 
@@ -16,10 +17,101 @@ app.use((req, res, next) => {
   next();
 });
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("✅ MongoDB Connected Successfully"))
-  .catch(err => console.error("❌ MongoDB Connection Error:", err.message));
+// Connect to MongoDB with proper options
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => {
+  console.log("✅ MongoDB Connected Successfully");
+  // Test the connection by checking database stats
+  return mongoose.connection.db.stats();
+})
+.then((stats) => {
+  console.log("📊 Database stats:", {
+    collections: stats.collections,
+    indexes: stats.indexes,
+    documents: stats.objects
+  });
+})
+.catch(err => {
+  console.error("❌ MongoDB Connection Error:", err.message);
+  // Exit process on failed connection
+  process.exit(1);
+});
+
+// User Authentication Routes
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    // Check if user exists
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid email address or account does not exist' });
+    }
+
+    // Check password (in a real app, you would hash the password)
+    if (user.password !== password) {
+      return res.status(401).json({ error: 'Invalid password' });
+    }
+
+    // Send success response
+    res.json({ 
+      success: true, 
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email
+      }
+    });
+  } catch (err) {
+    console.error('Login error:', err);
+    res.status(500).json({ error: 'Server error during login' });
+  }
+});
+
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+    
+    console.log('Attempting to register new user:', { name, email });
+
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: 'Name, email, and password are required' });
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      console.log('Registration failed: Email already exists:', email);
+      return res.status(400).json({ error: 'Email already registered' });
+    }
+
+    // Create new user
+    const user = new User({ name, email, password });
+    
+    // Save the user to database
+    const savedUser = await user.save();
+    console.log('New user registered successfully:', { id: savedUser._id, email: savedUser.email });
+
+    res.status(201).json({ 
+      success: true, 
+      user: {
+        id: savedUser._id,
+        name: savedUser.name,
+        email: savedUser.email
+      }
+    });
+  } catch (err) {
+    console.error('Registration error:', err);
+    // Check for specific MongoDB errors
+    if (err.code === 11000) {
+      return res.status(400).json({ error: 'Email already registered' });
+    }
+    res.status(500).json({ error: 'Server error during registration' });
+  }
+});
 
 // Donation schema and model
 const donationSchema = new mongoose.Schema({
