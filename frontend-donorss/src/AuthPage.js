@@ -21,7 +21,7 @@ export default function AuthPage({ setCurrentPage }) {
     generateCaptcha();
   }, []);
 
-  const validateLogin = (e) => {
+  const validateLogin = async (e) => {
     e.preventDefault();
     if (captcha !== loginCaptchaInput.toUpperCase()) {
       alert("CAPTCHA does not match!");
@@ -29,22 +29,71 @@ export default function AuthPage({ setCurrentPage }) {
       return;
     }
     
-    // Store login state in localStorage
-    localStorage.setItem('isLoggedIn', 'true');
-    localStorage.setItem('userEmail', loginEmail);
-    
-    setCurrentPage("home"); // ✅ Go to home page after login
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: loginEmail,
+          password: loginPassword
+        })
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        alert(data.error || 'Login failed');
+        return;
+      }
+
+      // Store login state in localStorage
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('userEmail', loginEmail);
+      localStorage.setItem('userName', data.user.name);
+      
+      setCurrentPage("home"); // ✅ Go to home page after login
+    } catch (error) {
+      console.error('Login error:', error);
+      alert('Failed to connect to the server. Please try again.');
+    }
   };
 
-  const validateRegister = (e) => {
+  const validateRegister = async (e) => {
     e.preventDefault();
     if (captcha !== registerCaptchaInput.toUpperCase()) {
       alert("CAPTCHA does not match!");
       generateCaptcha();
       return;
     }
-    alert("Registration successful (dummy)");
-    setView("login");
+
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: registerName,
+          email: registerEmail,
+          password: registerPassword
+        })
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        alert(data.error || 'Registration failed');
+        return;
+      }
+
+      alert("Registration successful! Please login.");
+      setView("login");
+    } catch (error) {
+      console.error('Registration error:', error);
+      alert('Failed to connect to the server. Please try again.');
+    }
   };
 
   const validateResetPassword = (e) => {
