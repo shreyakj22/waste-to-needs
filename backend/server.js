@@ -2,7 +2,6 @@ import mongoose from "mongoose";
 import dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
-
 dotenv.config();
 const app = express();
 
@@ -10,6 +9,12 @@ const app = express();
 app.use(cors());
 // Accept larger payloads for base64 images
 app.use(express.json({ limit: '20mb' }));
+
+// Simple request logger to help diagnose incoming requests
+app.use((req, res, next) => {
+  console.log(new Date().toISOString(), req.method, req.originalUrl);
+  next();
+});
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI)
@@ -39,9 +44,11 @@ app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 app.post('/api/donations', async (req, res) => {
   try {
     const data = req.body;
+    console.log('POST /api/donations payload keys:', Object.keys(data || {}));
     const donation = new Donation(data);
-    await donation.save();
-    return res.status(201).json(donation);
+    const saved = await donation.save();
+    console.log('Donation saved with _id=', saved._id);
+    return res.status(201).json(saved);
   } catch (err) {
     console.error('Error saving donation:', err);
     return res.status(500).json({ error: 'Failed to save donation' });
@@ -59,7 +66,30 @@ app.get('/api/donations', async (req, res) => {
   }
 });
 
+// Bulk upload endpoint (used by client offline sync)
+app.post('/api/donations/bulk', async (req, res) => {
+  try {
+    const { donations } = req.body || {};
+    if (!Array.isArray(donations) || donations.length === 0) {
+      return res.status(400).json({ error: 'No donations provided' });
+    }
+    const docs = donations.map(d => new Donation(d));
+    const saved = await Donation.insertMany(docs, { ordered: false });
+    console.log('Bulk upload: saved ${saved.length} donations');
+    return res.status(201).json({ savedCount: saved.length });
+  } catch (err) {
+    console.error('Bulk upload error:', err);
+    return res.status(500).json({ error: 'Bulk upload failed' });
+  }
+});
+
 // Start server
-app.listen(process.env.PORT || 5000, () => {
-  console.log(`🚀 Server running on port ${process.env.PORT || 5000}`);
+const PORT = Number(process.env.PORT || 5000);
+app.listen(PORT, '0.0.0.0', function (err) {
+  if (err) {
+    console.error('Failed to start server:', err);
+    process.exit(1);
+  }
+  const addr = this.address();
+  console.log('🚀 Server running and listening on ${addr.address}:${addr.port}');
 });

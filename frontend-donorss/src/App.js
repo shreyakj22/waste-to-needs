@@ -323,7 +323,6 @@ function DonatePage({ setCurrentPage }) {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(donation),
                 });
-
                 if (!res.ok) throw new Error(`server returned ${res.status}`);
 
                 // success: cleanup and navigate to browse
