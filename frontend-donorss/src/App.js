@@ -35,6 +35,7 @@ const commonStyles = {
         fontWeight: "bold",
         color: "#16a34a",
         fontSize: "18px",
+        fontFamily: "'Pacifico', 'Segoe UI', Tahoma, sans-serif",
         cursor: 'pointer',
     },
     navLinks: {
@@ -196,7 +197,7 @@ function Logo({ width = 30, height = 30 }) {
 }
 
 
-function DonatePage({ setCurrentPage }) {
+function DonatePage({ setCurrentPage, cart }) {
     const [formData, setFormData] = useState({
         itemTitle: '',
         category: '',
@@ -348,12 +349,15 @@ function DonatePage({ setCurrentPage }) {
             {/* Navbar */}
             <nav style={commonStyles.navbar}>
                 <div onClick={() => setCurrentPage('home')} style={commonStyles.logo}>
-                        <Logo width={30} height={30} />
-                    WasteDonate
+                            <Logo width={30} height={30} />
+                        Waste2Need
                 </div>
                 <div style={commonStyles.navLinks}>
                     <div onClick={() => setCurrentPage('browse')} style={commonStyles.link(false)}> Browse Items </div>
                     <div onClick={() => setCurrentPage('donate')} style={commonStyles.link(true)}> Donate Items </div>
+                    <div onClick={() => setCurrentPage('cart')} style={commonStyles.link(false)}>
+                        Cart ({cart ? cart.reduce((s,i)=>s+(i.qty||1),0) : 0})
+                    </div>
                     {/* About link removed */}
                     <button 
                         onClick={() => {
@@ -578,7 +582,7 @@ function DonatePage({ setCurrentPage }) {
 
             {/* Footer */}
             <footer style={commonStyles.footer}>
-                © {new Date().getFullYear()} WasteDonate — All Rights Reserved.
+                © {new Date().getFullYear()} Waste2Need — All Rights Reserved.
             </footer>
         </div>
     );
@@ -587,11 +591,25 @@ function DonatePage({ setCurrentPage }) {
 // =========================================================
 // --- 3. BROWSE PAGE COMPONENT ---
 // =========================================================
-function BrowsePage({ setCurrentPage }) {
+function BrowsePage({ setCurrentPage, addToCart, cart }) {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [donations, setDonations] = useState([]);
     const [selectedDonation, setSelectedDonation] = useState(null);
+    // Responsive column count for the grid: 1 (small), 2 (medium), 3 (large)
+    const [columns, setColumns] = useState(3);
+
+    useEffect(() => {
+        const updateColumns = () => {
+            const w = window.innerWidth;
+            if (w < 640) setColumns(1);
+            else if (w < 1000) setColumns(2);
+            else setColumns(3);
+        };
+        updateColumns();
+        window.addEventListener('resize', updateColumns);
+        return () => window.removeEventListener('resize', updateColumns);
+    }, []);
 
     // Load donations from backend when component mounts, fallback to localStorage
     useEffect(() => {
@@ -726,20 +744,18 @@ function BrowsePage({ setCurrentPage }) {
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
-        // allow cards to sit left-to-right but wrap to new rows on smaller screens
-        flex: '0 1 320px',
-        minWidth: '240px',
+        // use full width of grid column
+        width: '100%',
+        boxSizing: 'border-box',
     };
 
-    // Layout changed to a horizontal, scrollable row so items are listed left->right
+    // Use CSS Grid to create up to 3 columns and ensure items fit the screen
     const itemGridStyle = {
-        display: 'flex',
-        flexDirection: 'row',
-        flexWrap: 'wrap',
+        display: 'grid',
+        gridTemplateColumns: `repeat(${columns}, 1fr)`,
         gap: '20px',
         padding: '20px 0',
-        // left-to-right flow; wrapping prevents continuous horizontal scroll
-        justifyContent: 'flex-start',
+        alignItems: 'start',
     };
 
     const imageStyle = {
@@ -794,12 +810,13 @@ function BrowsePage({ setCurrentPage }) {
             {/* Navbar */}
             <nav style={commonStyles.navbar}>
                 <div onClick={() => setCurrentPage('home')} style={commonStyles.logo}>
-                        <Logo width={30} height={30} />
-                    WasteDonate
+                            <Logo width={30} height={30} />
+                        Waste2Need
                 </div>
                 <div style={commonStyles.navLinks}>
                     <div onClick={() => setCurrentPage('browse')} style={commonStyles.link(true)}> Browse Items </div>
                     <div onClick={() => setCurrentPage('donate')} style={commonStyles.link(false)}> Donate Items </div>
+                    <div onClick={() => setCurrentPage('cart')} style={commonStyles.link(false)}>Cart ({cart ? cart.reduce((s,i)=>s+(i.qty||1),0) : 0})</div>
                     {/* About link removed */}
                     <button 
                         onClick={() => {
@@ -894,16 +911,26 @@ function BrowsePage({ setCurrentPage }) {
                                             <p style={{ margin: '0 0 8px 0', fontSize: '14px' }}>
                                                 📍 {donation.pickupLocation}
                                             </p>
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); handleRequest(donation.id); if (selectedDonation && selectedDonation.id === donation.id) closeModal(); }}
-                                                style={{
-                                                    ...commonStyles.button('#16a34a'),
-                                                    width: '100%',
-                                                    marginTop: '10px'
-                                                }}
-                                            >
-                                                Request Item
-                                            </button>
+                                            <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleRequest(donation.id); if (selectedDonation && selectedDonation.id === donation.id) closeModal(); }}
+                                                    style={{
+                                                        ...commonStyles.button('#10b981'),
+                                                        flex: 1
+                                                    }}
+                                                >
+                                                    Request Item
+                                                </button>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); addToCart(donation); alert('Added to cart'); }}
+                                                    style={{
+                                                        ...commonStyles.button('#2563eb', true),
+                                                        flex: 1
+                                                    }}
+                                                >
+                                                    Add to Cart
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
@@ -958,7 +985,7 @@ function BrowsePage({ setCurrentPage }) {
 
             {/* Footer */}
             <footer style={commonStyles.footer}>
-                © {new Date().getFullYear()} WasteDonate — All Rights Reserved.
+                © {new Date().getFullYear()} Waste2Need — All Rights Reserved.
             </footer>
         </div>
     );
@@ -968,7 +995,7 @@ function BrowsePage({ setCurrentPage }) {
 // --- 4. HOME PAGE COMPONENT ---
 // Includes the fix for the Start Donating button
 // =========================================================
-function HomePage({ setCurrentPage }) {
+function HomePage({ setCurrentPage, cart }) {
     const bgImage =
         "https://images.unsplash.com/photo-1556767576-5ec41e3239d6?auto=format&fit=crop&w=1600&q=80";
 
@@ -989,6 +1016,14 @@ function HomePage({ setCurrentPage }) {
             justifyContent: "center",
             alignItems: "center",
             padding: "50px 20px",
+            position: "relative",
+            backgroundColor: "#f3f4f6", // Grey background
+            backgroundImage: "url('https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?auto=format&fit=crop&q=80')", // Sustainability/recycling themed image
+            backgroundBlendMode: "soft-light",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            backgroundRepeat: "no-repeat",
+            opacity: 0.9,
         },
         overlay: {
             position: "absolute",
@@ -1109,13 +1144,14 @@ function HomePage({ setCurrentPage }) {
             <nav style={styles.navbar}>
                 <div onClick={() => setCurrentPage('home')} style={styles.logo}>
                         <Logo width={30} height={30} />
-                    WasteDonate
+                    Waste2Need
                 </div>
                 <div style={styles.navLinks}>
                     <div onClick={() => setCurrentPage('browse')} style={styles.link(false)}>
                         Browse Items
                     </div>
                     <div onClick={() => setCurrentPage('donate')} style={styles.link(false)}> Donate Items </div>
+                    <div onClick={() => setCurrentPage('cart')} style={styles.link(false)}>Cart ({cart ? cart.reduce((s,i)=>s+(i.qty||1),0) : 0})</div>
                     {/* About link removed */}
                     <button 
                         onClick={() => {
@@ -1205,7 +1241,7 @@ function HomePage({ setCurrentPage }) {
 
             {/* Footer */}
             <footer style={styles.footer}>
-                © {new Date().getFullYear()} WasteDonate — All Rights Reserved.
+                © {new Date().getFullYear()} Waste2Need — All Rights Reserved.
             </footer>
         </div>
     );
@@ -1218,6 +1254,33 @@ function HomePage({ setCurrentPage }) {
 export default function App() {
     // Start on a splash/start page. Clicking the logo navigates to auth.
     const [currentPage, setCurrentPage] = useState('splash');
+    // Simple client-side cart persisted to localStorage
+    const [cart, setCart] = useState(() => {
+        try {
+            return JSON.parse(localStorage.getItem('w2n_cart') || '[]');
+        } catch (e) { return []; }
+    });
+
+    useEffect(() => {
+        try { localStorage.setItem('w2n_cart', JSON.stringify(cart)); } catch (e) {}
+    }, [cart]);
+
+    const addToCart = (item) => {
+        setCart(prev => {
+            const found = prev.find(i => i.id === item.id);
+            if (found) {
+                return prev.map(i => i.id === item.id ? { ...i, qty: (i.qty || 1) + 1 } : i);
+            }
+            return [...prev, { ...item, qty: 1 }];
+        });
+    };
+
+    const removeFromCart = (id) => setCart(prev => prev.filter(i => i.id !== id));
+
+    const updateQty = (id, qty) => {
+        if (qty <= 0) return removeFromCart(id);
+        setCart(prev => prev.map(i => i.id === id ? { ...i, qty } : i));
+    };
 
     if (currentPage === 'splash') {
         return <SplashPage setCurrentPage={setCurrentPage} />;
@@ -1225,14 +1288,17 @@ export default function App() {
     if (currentPage === 'auth') {
         return <AuthPage setCurrentPage={setCurrentPage} />;
     }
+    if (currentPage === 'cart') {
+        return <CartPage setCurrentPage={setCurrentPage} cart={cart} removeFromCart={removeFromCart} updateQty={updateQty} />;
+    }
     if (currentPage === 'browse') {
-        return <BrowsePage setCurrentPage={setCurrentPage} />;
+        return <BrowsePage setCurrentPage={setCurrentPage} addToCart={addToCart} cart={cart} />;
     }
     if (currentPage === 'donate') {
-        return <DonatePage setCurrentPage={setCurrentPage} />;
+        return <DonatePage setCurrentPage={setCurrentPage} cart={cart} />;
     }
 
-    return <HomePage setCurrentPage={setCurrentPage} />;
+    return <HomePage setCurrentPage={setCurrentPage} cart={cart} />;
 }
 
 // =========================================================
@@ -1289,6 +1355,136 @@ function SplashPage({ setCurrentPage }) {
                 </div>
             </div>
             <div style={styles.subtitle}>Click the logo to sign in or register</div>
+        </div>
+    );
+}
+
+// =========================================================
+// --- CART PAGE ---
+// =========================================================
+function CartPage({ setCurrentPage, cart, removeFromCart, updateQty }) {
+    // Improved, responsive CartPage design.
+    const itemCount = (cart || []).reduce((s, it) => s + (it.qty || 1), 0);
+
+    const styles = {
+        container: { minHeight: '100vh', backgroundColor: '#f5f7fb' },
+        inner: { maxWidth: '1100px', margin: '28px auto', padding: '20px' },
+        header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' },
+        title: { fontSize: '22px', fontWeight: 700, color: '#111' },
+        layout: { display: 'grid', gridTemplateColumns: '1fr', gap: '20px' },
+        // summary will be sticky on larger screens via position: sticky when CSS supports
+        summary: { background: '#fff', padding: '18px', borderRadius: '12px', boxShadow: '0 6px 20px rgba(16,24,40,0.06)' },
+        itemCard: { display: 'flex', gap: '14px', background: '#fff', padding: '14px', borderRadius: '10px', alignItems: 'flex-start', boxShadow: '0 4px 14px rgba(16,24,40,0.04)' },
+        thumb: { width: '140px', height: '100px', borderRadius: '8px', overflow: 'hidden', flexShrink: 0, background: '#eee' },
+        meta: { flex: 1 },
+        itemTitle: { fontSize: '16px', fontWeight: 700, marginBottom: '6px' },
+        itemDesc: { color: '#555', fontSize: '13px', marginBottom: '10px' },
+        actionsRow: { display: 'flex', gap: '10px', alignItems: 'center' },
+        qtyBox: { display: 'flex', alignItems: 'center', gap: '8px', border: '1px solid #e6e9ef', padding: '4px', borderRadius: '8px' },
+        smallBtn: { padding: '6px 10px', borderRadius: '8px', cursor: 'pointer', border: 'none' }
+    };
+
+    // Use media query-friendly approach: change layout columns via JS so inline grid works responsively
+    const [isDesktop, setIsDesktop] = React.useState(() => window.innerWidth >= 1000);
+    React.useEffect(() => {
+        const onResize = () => setIsDesktop(window.innerWidth >= 1000);
+        window.addEventListener('resize', onResize);
+        return () => window.removeEventListener('resize', onResize);
+    }, []);
+
+    return (
+        <div style={{ ...commonStyles.page, ...styles.container }}>
+            <nav style={commonStyles.navbar}>
+                <div onClick={() => setCurrentPage('home')} style={commonStyles.logo}>
+                    <Logo width={30} height={30} />
+                    Waste2Need
+                </div>
+                <div style={commonStyles.navLinks}>
+                    <div onClick={() => setCurrentPage('browse')} style={commonStyles.link(false)}> Browse Items </div>
+                    <div onClick={() => setCurrentPage('donate')} style={commonStyles.link(false)}> Donate Items </div>
+                    <div onClick={() => setCurrentPage('auth')} style={commonStyles.link(false)}>Logout</div>
+                </div>
+            </nav>
+
+            <div style={styles.inner}>
+                <div style={styles.header}>
+                    <div>
+                        <div style={styles.title}>My Cart</div>
+                        <div style={{ color: '#666', fontSize: '13px', marginTop: '6px' }}>{itemCount} item(s) — {cart.length} product(s)</div>
+                    </div>
+                    <div>
+                        <button onClick={() => { setCurrentPage('browse'); }} style={{ ...commonStyles.button('#2563eb'), marginRight: 10 }}>Continue Shopping</button>
+                        <button onClick={() => { alert('Request sent (demo).'); setCurrentPage('browse'); }} style={commonStyles.button('#16a34a')}>Request All</button>
+                    </div>
+                </div>
+
+                <div style={{ ...styles.layout, gridTemplateColumns: isDesktop ? '2fr 380px' : '1fr' }}>
+                    <section>
+                        {(!cart || cart.length === 0) ? (
+                            <div style={{ padding: '40px', textAlign: 'center', color: '#666', background: '#fff', borderRadius: 12 }}>Your cart is empty.</div>
+                        ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                {cart.map(item => (
+                                    <div key={item.id} style={styles.itemCard}>
+                                        <div style={styles.thumb}>
+                                            {item.photos && item.photos[0] ? (
+                                                <img src={item.photos[0]} alt={item.itemTitle} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                            ) : (
+                                                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999' }}>No Image</div>
+                                            )}
+                                        </div>
+
+                                        <div style={styles.meta}>
+                                            <div style={styles.itemTitle}>{item.itemTitle}</div>
+                                            <div style={styles.itemDesc}>{item.description ? item.description.substring(0, 160) : ''}</div>
+
+                                            <div style={styles.actionsRow}>
+                                                <div style={styles.qtyBox}>
+                                                    <button aria-label="decrease" onClick={() => updateQty(item.id, (item.qty || 1) - 1)} style={{ ...styles.smallBtn, background: '#f3f4f6' }}>−</button>
+                                                    <input type="number" min="1" value={item.qty || 1} onChange={(e) => updateQty(item.id, parseInt(e.target.value || '1', 10))} style={{ width: 56, border: 'none', textAlign: 'center', fontSize: 14 }} />
+                                                    <button aria-label="increase" onClick={() => updateQty(item.id, (item.qty || 1) + 1)} style={{ ...styles.smallBtn, background: '#f3f4f6' }}>+</button>
+                                                </div>
+
+                                                <button onClick={() => removeFromCart(item.id)} style={{ ...commonStyles.button('#ef4444', true) }}>Remove</button>
+
+                                                <div style={{ marginLeft: 'auto', color: '#666', fontSize: 13 }}>{item.category || ''}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </section>
+
+                    <aside style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                        <div style={{ ...styles.summary, position: isDesktop ? 'sticky' : 'relative', top: 20 }}>
+                            <h3 style={{ margin: 0 }}>Summary</h3>
+                            <div style={{ marginTop: 12, display: 'flex', justifyContent: 'space-between', color: '#444' }}>
+                                <div>Items</div>
+                                <div>{itemCount}</div>
+                            </div>
+                            <div style={{ marginTop: 10, color: '#666', fontSize: 13 }}>
+                                This cart is a lightweight tracker for items you want to request. Use Request to contact donors.
+                            </div>
+
+                            <div style={{ marginTop: 16 }}>
+                                <button onClick={() => { alert('Request sent for items in cart (demo).'); setCurrentPage('browse'); }} style={commonStyles.button('#16a34a')}>Request All</button>
+                            </div>
+                        </div>
+
+                        <div style={{ ...styles.summary }}>
+                            <h4 style={{ marginTop: 0 }}>Tips</h4>
+                            <ul style={{ margin: 0, paddingLeft: '18px', color: '#555' }}>
+                                <li>Check item details before requesting.</li>
+                                <li>Only request items you can pick up or arrange delivery for.</li>
+                                <li>Contact donors directly via the item detail page after requesting.</li>
+                            </ul>
+                        </div>
+                    </aside>
+                </div>
+            </div>
+
+            <footer style={commonStyles.footer}>© {new Date().getFullYear()} Waste2Need — All Rights Reserved.</footer>
         </div>
     );
 }

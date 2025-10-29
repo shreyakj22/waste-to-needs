@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 export default function AuthPage({ setCurrentPage }) {
   const [view, setView] = useState("login");
   const [captcha, setCaptcha] = useState("");
+  const [captchaAnswer, setCaptchaAnswer] = useState(null);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginCaptchaInput, setLoginCaptchaInput] = useState("");
@@ -12,9 +13,20 @@ export default function AuthPage({ setCurrentPage }) {
   const [registerCaptchaInput, setRegisterCaptchaInput] = useState("");
   const [resetEmail, setResetEmail] = useState("");
 
+  // Generate a simple math captcha like "7 + 5 = ?" and store the numeric answer
   const generateCaptcha = () => {
-    const newCaptcha = Math.random().toString(36).substring(2, 8).toUpperCase();
-    setCaptcha(newCaptcha);
+    const a = Math.floor(Math.random() * 12) + 1; // 1..12
+    const b = Math.floor(Math.random() * 12) + 1; // 1..12
+    const ops = ['+','-','×'];
+    const op = ops[Math.floor(Math.random() * ops.length)];
+    let question = '';
+    let ans = 0;
+    if (op === '+') { ans = a + b; question = `${a} + ${b} = ?`; }
+    else if (op === '-') { ans = a - b; question = `${a} - ${b} = ?`; }
+    else { ans = a * b; question = `${a} × ${b} = ?`; }
+
+    setCaptcha(question);
+    setCaptchaAnswer(ans);
   };
 
   useEffect(() => {
@@ -23,9 +35,12 @@ export default function AuthPage({ setCurrentPage }) {
 
   const validateLogin = async (e) => {
     e.preventDefault();
-    if (captcha !== loginCaptchaInput.toUpperCase()) {
-      alert("CAPTCHA does not match!");
+    // accept numeric answers for math captcha
+    const userAns = Number((loginCaptchaInput || '').toString().trim());
+    if (Number.isNaN(userAns) || userAns !== captchaAnswer) {
+      alert("CAPTCHA answer is incorrect — please try again.");
       generateCaptcha();
+      setLoginCaptchaInput('');
       return;
     }
     
@@ -62,9 +77,11 @@ export default function AuthPage({ setCurrentPage }) {
 
   const validateRegister = async (e) => {
     e.preventDefault();
-    if (captcha !== registerCaptchaInput.toUpperCase()) {
-      alert("CAPTCHA does not match!");
+    const userAns = Number((registerCaptchaInput || '').toString().trim());
+    if (Number.isNaN(userAns) || userAns !== captchaAnswer) {
+      alert("CAPTCHA answer is incorrect — please try again.");
       generateCaptcha();
+      setRegisterCaptchaInput('');
       return;
     }
 
@@ -189,7 +206,7 @@ export default function AuthPage({ setCurrentPage }) {
                 <input placeholder='Password' type='password' value={loginPassword} onChange={e => setLoginPassword(e.target.value)} required style={input} />
 
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <input placeholder='Enter CAPTCHA' type='text' value={loginCaptchaInput} onChange={e => setLoginCaptchaInput(e.target.value)} required style={{ ...input, flex: 1 }} />
+                  <input placeholder='Solve the equation' type='text' value={loginCaptchaInput} onChange={e => setLoginCaptchaInput(e.target.value)} required style={{ ...input, flex: 1 }} />
                   <div style={{ padding: '10px 12px', borderRadius: 8, background: '#f1f5f9', fontWeight: 700 }}>{captcha}</div>
                 </div>
 
@@ -214,7 +231,7 @@ export default function AuthPage({ setCurrentPage }) {
                 <input placeholder='Password' type='password' value={registerPassword} onChange={e => setRegisterPassword(e.target.value)} required style={input} />
 
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <input placeholder='Enter CAPTCHA' type='text' value={registerCaptchaInput} onChange={e => setRegisterCaptchaInput(e.target.value)} required style={{ ...input, flex: 1 }} />
+                  <input placeholder='Solve the equation' type='text' value={registerCaptchaInput} onChange={e => setRegisterCaptchaInput(e.target.value)} required style={{ ...input, flex: 1 }} />
                   <div style={{ padding: '10px 12px', borderRadius: 8, background: '#f1f5f9', fontWeight: 700 }}>{captcha}</div>
                 </div>
 
