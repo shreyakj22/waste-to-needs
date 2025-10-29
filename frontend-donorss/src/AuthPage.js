@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 
 export default function AuthPage({ setCurrentPage }) {
   const [view, setView] = useState("login");
@@ -11,6 +11,11 @@ export default function AuthPage({ setCurrentPage }) {
   const [registerEmail, setRegisterEmail] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
   const [registerCaptchaInput, setRegisterCaptchaInput] = useState("");
+  const [verificationSent, setVerificationSent] = useState(false);
+  const [verificationCodeInput, setVerificationCodeInput] = useState("");
+  const [isVerified, setIsVerified] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const resendTimerRef = useRef(null);
   const [resetEmail, setResetEmail] = useState("");
 
   // Generate a simple math captcha like "7 + 5 = ?" and store the numeric answer
@@ -31,6 +36,10 @@ export default function AuthPage({ setCurrentPage }) {
 
   useEffect(() => {
     generateCaptcha();
+    return () => {
+      // cleanup any timers
+      if (resendTimerRef.current) { clearInterval(resendTimerRef.current); resendTimerRef.current = null; }
+    };
   }, []);
 
   const validateLogin = async (e) => {
@@ -84,7 +93,10 @@ export default function AuthPage({ setCurrentPage }) {
       setRegisterCaptchaInput('');
       return;
     }
-
+    if (!isVerified) {
+      alert('Please verify your email using the code sent to your email before registering.');
+      return;
+    }
     try {
       const response = await fetch('http://localhost:5000/api/auth/register', {
         method: 'POST',
@@ -110,6 +122,60 @@ export default function AuthPage({ setCurrentPage }) {
     } catch (error) {
       console.error('Registration error:', error);
       alert('Failed to connect to the server. Please try again.');
+    }
+  };
+
+  const sendVerification = async () => {
+    if (!registerEmail) { alert('Enter an email first'); return; }
+    try {
+      const res = await fetch('http://localhost:5000/api/auth/send-verification', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: registerEmail })
+      });
+      if (res.ok) {
+        setVerificationSent(true);
+        setIsVerified(false);
+        setVerificationCodeInput('');
+        // start 30s resend cooldown
+        setResendCooldown(30);
+        if (resendTimerRef.current) clearInterval(resendTimerRef.current);
+        resendTimerRef.current = setInterval(() => {
+          setResendCooldown(s => {
+            if (s <= 1) {
+              clearInterval(resendTimerRef.current);
+              resendTimerRef.current = null;
+              return 0;
+            }
+            return s - 1;
+          });
+        }, 1000);
+
+        alert('Verification code sent (if the server is configured). Check your email or server logs in dev.');
+      } else {
+        const body = await res.json();
+        alert(body.error || 'Failed to send verification');
+      }
+    } catch (err) {
+      console.error('sendVerification error', err);
+      alert('Failed to reach server to send verification code');
+    }
+  };
+
+  const verifyCode = async () => {
+    if (!registerEmail || !verificationCodeInput) { alert('Provide email and code'); return; }
+    try {
+      const res = await fetch('http://localhost:5000/api/auth/verify-code', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: registerEmail, code: verificationCodeInput })
+      });
+      if (res.ok) {
+        setIsVerified(true);
+        alert('Email verified — you can now complete registration');
+      } else {
+        const body = await res.json();
+        alert(body.error || 'Verification failed');
+      }
+    } catch (err) {
+      console.error('verifyCode error', err);
+      alert('Failed to reach server to verify code');
     }
   };
 
@@ -227,7 +293,19 @@ export default function AuthPage({ setCurrentPage }) {
 
               <form onSubmit={validateRegister} style={{ display: 'grid', gap: 12 }}>
                 <input placeholder='Full name' type='text' value={registerName} onChange={e => setRegisterName(e.target.value)} required style={input} />
-                <input placeholder='Email' type='email' value={registerEmail} onChange={e => setRegisterEmail(e.target.value)} required style={input} />
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <input placeholder='Email' type='email' value={registerEmail} onChange={e => { setRegisterEmail(e.target.value); setVerificationSent(false); setIsVerified(false); }} required style={{ ...input, flex: 1 }} />
+                  <button type='button' onClick={sendVerification} disabled={resendCooldown > 0} style={{ padding: '10px 12px', borderRadius: 10, border: 'none', background: resendCooldown > 0 ? '#94a3b8' : '#2563eb', color: '#fff', cursor: resendCooldown > 0 ? 'not-allowed' : 'pointer' }}>{resendCooldown > 0 ? `Resend (${resendCooldown}s)` : 'Send code'}</button>
+                </div>
+
+                <div style={{ marginTop: 6 }}>
+                  {/* always-visible code box (disabled until code sent) */}
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <input placeholder='Verification code' value={verificationCodeInput} onChange={e => setVerificationCodeInput(e.target.value)} disabled={!verificationSent || isVerified} style={{ ...input, flex: 1 }} />
+                    <button type='button' onClick={verifyCode} disabled={!verificationSent || isVerified} style={{ padding: '10px 12px', borderRadius: 10, border: 'none', background: '#10b981', color: '#fff', cursor: (!verificationSent || isVerified) ? 'not-allowed' : 'pointer' }}>Verify</button>
+                    {isVerified && <div style={{ marginLeft: 8, padding: '6px 10px', borderRadius: 8, background: '#d1fae5', color: '#065f46', fontWeight: 700 }}>Verified ✓</div>}
+                  </div>
+                </div>
                 <input placeholder='Password' type='password' value={registerPassword} onChange={e => setRegisterPassword(e.target.value)} required style={input} />
 
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -235,7 +313,7 @@ export default function AuthPage({ setCurrentPage }) {
                   <div style={{ padding: '10px 12px', borderRadius: 8, background: '#f1f5f9', fontWeight: 700 }}>{captcha}</div>
                 </div>
 
-                <button type='submit' style={button}>Register</button>
+                <button type='submit' style={button} disabled={!isVerified}>Register</button>
               </form>
 
               <div style={{ marginTop: 10, textAlign: 'center' }}>
