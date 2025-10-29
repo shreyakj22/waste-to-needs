@@ -102,294 +102,148 @@ export default function AuthPage({ setCurrentPage }) {
     setView("login");
   };
 
+  const base = {
+    fontFamily: "'Segoe UI', system-ui, -apple-system, sans-serif",
+    minHeight: '100vh',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'linear-gradient(135deg, #f4fff9 0%, #eafaf0 100%)',
+    padding: 20,
+  };
+
+  const card = {
+    width: '100%',
+    maxWidth: 920,
+    borderRadius: 14,
+    overflow: 'hidden',
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    boxShadow: '0 12px 40px rgba(16, 24, 40, 0.12)'
+  };
+
+  const left = {
+    background: 'linear-gradient(180deg,#ffffff 0%, #f7fff9 100%)',
+    padding: 36,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 12,
+    alignItems: 'flex-start',
+    justifyContent: 'center'
+  };
+
+  const right = {
+    background: '#fff',
+    padding: 36,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 12,
+    justifyContent: 'center'
+  };
+
+  const input = {
+    width: '100%',
+    padding: '12px 14px',
+    borderRadius: 10,
+    border: '1px solid #e6e6e6',
+    outline: 'none',
+    fontSize: 15,
+    boxSizing: 'border-box'
+  };
+
+  const button = {
+    width: '100%',
+    padding: '12px 16px',
+    background: '#16a34a',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 10,
+    fontSize: 16,
+    cursor: 'pointer',
+    fontWeight: 700
+  };
+
+  const smallLink = { color: '#16a34a', cursor: 'pointer', fontSize: 14 };
+
   return (
-    <div
-      style={{
-        fontFamily: "Arial, sans-serif",
-        background: "#f2f2f2",
-        minHeight: "100vh",
-        padding: 0,
-        margin: 0,
-      }}
-    >
-      <div
-        style={{
-          width: 400,
-          margin: "50px auto",
-          background: "#fff",
-          padding: 30,
-          boxShadow: "0 0 10px rgba(0,0,0,0.1)",
-        }}
-      >
-        {view === "login" && (
-          <>
-            <h2 style={{ 
-              textAlign: "center", 
-              marginBottom: 20,
-              fontSize: "2.2em",
-              fontWeight: "700",
-              color: "#2c3e50",
-              textTransform: "uppercase",
-              letterSpacing: "2px",
-              textShadow: "2px 2px 4px rgba(0,0,0,0.1)"
-            }}>
-              waste-2-need
-            </h2>
-            <p style={{
-              textAlign: "center",
-              color: "#2c3e50",
-              marginBottom: "20px",
-              fontSize: "1.1em",
-              fontFamily: "Calibri, sans-serif",
-              fontWeight: "bold"
-            }}>
-              Please sign in to continue
-            </p>
-            <form onSubmit={validateLogin}>
-              <label style={{ fontWeight: "bold", fontSize: "1.05em", paddingBottom: 6, display: "block" }}>Email:</label>
-              <input
-                type="email"
-                value={loginEmail}
-                onChange={(e) => setLoginEmail(e.target.value)}
-                required
-                style={{ width: "100%", padding: 8, boxSizing: "border-box" }}
-              />
+    <div style={base}>
+      <div style={card}>
+        <div style={left}>
+          <div style={{ fontSize: 32, color: '#0f172a', fontWeight: 700, letterSpacing: '-0.5px' }}>Waste2Need</div>
+          <div style={{ color: '#0f172a', fontSize: 18, fontWeight: 600 }}>Give. Share. Reuse.</div>
+          <p style={{ color: '#334155', marginTop: 8, lineHeight: '1.6' }}>Join a community that reduces waste and shares useful items locally. Create an account to donate or request items near you.</p>
+          <div style={{ marginTop: 16, display: 'flex', gap: 10 }}>
+            <div style={{ padding: '8px 12px', borderRadius: 8, background: '#e6fff1', color: '#065f46', fontWeight: 600 }}>Free to use</div>
+            <div style={{ padding: '8px 12px', borderRadius: 8, background: '#f0fdf4', color: '#065f46' }}>Community driven</div>
+          </div>
+        </div>
 
-              <label style={{ fontWeight: "bold", fontSize: "1.05em", marginTop: 16, paddingBottom: 6, display: "block" }}>Password:</label>
-              <input
-                type="password"
-                value={loginPassword}
-                onChange={(e) => setLoginPassword(e.target.value)}
-                required
-                style={{ width: "100%", padding: 8, boxSizing: "border-box" }}
-              />
+        <div style={right}>
+          {view === 'login' && (
+            <>
+              <div style={{ marginBottom: 6, fontSize: 20, fontWeight: 700, color: '#0f172a' }}>Welcome back</div>
+              <div style={{ color: '#475569', marginBottom: 12 }}>Sign in to your account</div>
 
-              <label style={{ fontWeight: "bold", fontSize: "1.05em", marginTop: 16, paddingBottom: 6, display: "block" }}>Enter CAPTCHA:</label>
-              <div style={{ display: "flex", alignItems: "center" }}>
-                <input
-                  type="text"
-                  value={loginCaptchaInput}
-                  onChange={(e) => setLoginCaptchaInput(e.target.value)}
-                  required
-                  style={{ flex: 1, marginRight: 10, padding: 8 }}
-                />
-                <div
-                  style={{
-                    background: "#ddd",
-                    padding: 10,
-                    fontWeight: "bold",
-                    fontSize: "1.2em",
-                    userSelect: "none",
-                  }}
-                >
-                  {captcha}
+              <form onSubmit={validateLogin} style={{ display: 'grid', gap: 12 }}>
+                <input placeholder='Email' type='email' value={loginEmail} onChange={e => setLoginEmail(e.target.value)} required style={input} />
+                <input placeholder='Password' type='password' value={loginPassword} onChange={e => setLoginPassword(e.target.value)} required style={input} />
+
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <input placeholder='Enter CAPTCHA' type='text' value={loginCaptchaInput} onChange={e => setLoginCaptchaInput(e.target.value)} required style={{ ...input, flex: 1 }} />
+                  <div style={{ padding: '10px 12px', borderRadius: 8, background: '#f1f5f9', fontWeight: 700 }}>{captcha}</div>
                 </div>
+
+                <button type='submit' style={button}>Login</button>
+              </form>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
+                <div style={smallLink} onClick={() => setView('register')}>Create account</div>
+                <div style={smallLink} onClick={() => setView('forgot')}>Forgot?</div>
               </div>
+            </>
+          )}
 
-              <button
-                type="submit"
-                style={{
-                  marginTop: 15,
-                  width: "100%",
-                  padding: 10,
-                  backgroundColor: "#28a745",
-                  border: "none",
-                  color: "#fff",
-                  fontSize: 16,
-                  cursor: "pointer",
-                  fontWeight: "bold"
-                }}
-                onMouseOver={(e) =>
-                  (e.target.style.backgroundColor = "#1e7e34")
-                }
-                onMouseOut={(e) =>
-                  (e.target.style.backgroundColor = "#28a745")
-                }
-              >
-                Login
-              </button>
-            </form>
+          {view === 'register' && (
+            <>
+              <div style={{ marginBottom: 6, fontSize: 20, fontWeight: 700, color: '#0f172a' }}>Create account</div>
+              <div style={{ color: '#475569', marginBottom: 12 }}>Join Waste2Need</div>
 
-            <div
-              style={{
-                textAlign: "right",
-                marginTop: 10,
-                fontSize: "0.9em",
-                color: "#28a745",
-                cursor: "pointer",
-              }}
-              onClick={() => setView("forgot")}
-            >
-              Forgot Password?
-            </div>
+              <form onSubmit={validateRegister} style={{ display: 'grid', gap: 12 }}>
+                <input placeholder='Full name' type='text' value={registerName} onChange={e => setRegisterName(e.target.value)} required style={input} />
+                <input placeholder='Email' type='email' value={registerEmail} onChange={e => setRegisterEmail(e.target.value)} required style={input} />
+                <input placeholder='Password' type='password' value={registerPassword} onChange={e => setRegisterPassword(e.target.value)} required style={input} />
 
-            <div
-              style={{
-                textAlign: "center",
-                marginTop: 10,
-                cursor: "pointer",
-                color: "#28a745",
-              }}
-              onClick={() => setView("register")}
-            >
-              Don't have an account? Register
-            </div>
-          </>
-        )}
-
-        {view === "register" && (
-          <>
-            <h2 style={{ 
-              textAlign: "center", 
-              marginBottom: 20,
-              fontSize: "2.2em",
-              fontWeight: "700",
-              color: "#2c3e50",
-              textTransform: "uppercase",
-              letterSpacing: "2px",
-              textShadow: "2px 2px 4px rgba(0,0,0,0.1)"
-            }}>
-              Register
-            </h2>
-            <form onSubmit={validateRegister}>
-              <label style={{ fontWeight: "bold", fontSize: "1.05em", paddingBottom: 6, display: "block" }}>Name:</label>
-              <input
-                type="text"
-                value={registerName}
-                onChange={(e) => setRegisterName(e.target.value)}
-                required
-                style={{ width: "100%", padding: 8, boxSizing: "border-box" }}
-              />
-
-              <label style={{ fontWeight: "bold", fontSize: "1.05em", marginTop: 16, paddingBottom: 6, display: "block" }}>Email:</label>
-              <input
-                type="email"
-                value={registerEmail}
-                onChange={(e) => setRegisterEmail(e.target.value)}
-                required
-                style={{ width: "100%", padding: 8, boxSizing: "border-box" }}
-              />
-
-              <label style={{ fontWeight: "bold", fontSize: "1.05em", marginTop: 16, paddingBottom: 6, display: "block" }}>Password:</label>
-              <input
-                type="password"
-                value={registerPassword}
-                onChange={(e) => setRegisterPassword(e.target.value)}
-                required
-                style={{ width: "100%", padding: 8, boxSizing: "border-box" }}
-              />
-
-              <label style={{ fontWeight: "bold", fontSize: "1.05em", marginTop: 16, paddingBottom: 6, display: "block" }}>Enter CAPTCHA:</label>
-              <div style={{ display: "flex", alignItems: "center" }}>
-                <input
-                  type="text"
-                  value={registerCaptchaInput}
-                  onChange={(e) => setRegisterCaptchaInput(e.target.value)}
-                  required
-                  style={{ flex: 1, marginRight: 10, padding: 8 }}
-                />
-                <div
-                  style={{
-                    background: "#ddd",
-                    padding: 10,
-                    fontWeight: "bold",
-                    fontSize: "1.2em",
-                    userSelect: "none",
-                  }}
-                >
-                  {captcha}
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <input placeholder='Enter CAPTCHA' type='text' value={registerCaptchaInput} onChange={e => setRegisterCaptchaInput(e.target.value)} required style={{ ...input, flex: 1 }} />
+                  <div style={{ padding: '10px 12px', borderRadius: 8, background: '#f1f5f9', fontWeight: 700 }}>{captcha}</div>
                 </div>
+
+                <button type='submit' style={button}>Register</button>
+              </form>
+
+              <div style={{ marginTop: 10, textAlign: 'center' }}>
+                <span style={{ color: '#64748b' }}>Already a member? </span>
+                <span style={smallLink} onClick={() => setView('login')}>Login</span>
               </div>
+            </>
+          )}
 
-              <button
-                type="submit"
-                style={{
-                  marginTop: 15,
-                  width: "100%",
-                  padding: 10,
-                  backgroundColor: "#28a745",
-                  border: "none",
-                  color: "#fff",
-                  fontSize: 16,
-                  cursor: "pointer",
-                  fontWeight: "bold"
-                }}
-                onMouseOver={(e) =>
-                  (e.target.style.backgroundColor = "#1e7e34")
-                }
-                onMouseOut={(e) =>
-                  (e.target.style.backgroundColor = "#28a745")
-                }
-              >
-                Register
-              </button>
-            </form>
+          {view === 'forgot' && (
+            <>
+              <div style={{ marginBottom: 6, fontSize: 20, fontWeight: 700, color: '#0f172a' }}>Reset password</div>
+              <div style={{ color: '#475569', marginBottom: 12 }}>We will send a reset link to your email</div>
 
-            <div
-              style={{
-                textAlign: "center",
-                marginTop: 10,
-                cursor: "pointer",
-                color: "#28a745",
-              }}
-              onClick={() => setView("login")}
-            >
-              Already have an account? Login
-            </div>
-          </>
-        )}
+              <form onSubmit={validateResetPassword} style={{ display: 'grid', gap: 12 }}>
+                <input placeholder='Email address' type='email' value={resetEmail} onChange={e => setResetEmail(e.target.value)} required style={input} />
+                <button type='submit' style={button}>Send reset link</button>
+              </form>
 
-        {view === "forgot" && (
-          <>
-            <h2 style={{ textAlign: "center", marginBottom: 20 }}>
-              Reset Password
-            </h2>
-            <form onSubmit={validateResetPassword}>
-              <label>Enter your email:</label>
-              <input
-                type="email"
-                value={resetEmail}
-                onChange={(e) => setResetEmail(e.target.value)}
-                required
-                style={{ width: "100%", padding: 8, boxSizing: "border-box" }}
-              />
-
-              <button
-                type="submit"
-                style={{
-                  marginTop: 15,
-                  width: "100%",
-                  padding: 10,
-                  backgroundColor: "#28a745",
-                  border: "none",
-                  color: "#fff",
-                  fontSize: 16,
-                  cursor: "pointer",
-                }}
-                onMouseOver={(e) =>
-                  (e.target.style.backgroundColor = "#1e7e34")
-                }
-                onMouseOut={(e) =>
-                  (e.target.style.backgroundColor = "#28a745")
-                }
-              >
-                Reset Password
-              </button>
-            </form>
-
-            <div
-              style={{
-                textAlign: "center",
-                marginTop: 10,
-                cursor: "pointer",
-                color: "#28a745",
-              }}
-              onClick={() => setView("login")}
-            >
-              Back to Login
-            </div>
-          </>
-        )}
+              <div style={{ marginTop: 10, textAlign: 'center' }}>
+                <span style={smallLink} onClick={() => setView('login')}>Back to login</span>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

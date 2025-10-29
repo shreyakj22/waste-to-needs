@@ -591,6 +591,7 @@ function BrowsePage({ setCurrentPage }) {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [donations, setDonations] = useState([]);
+    const [selectedDonation, setSelectedDonation] = useState(null);
 
     // Load donations from backend when component mounts, fallback to localStorage
     useEffect(() => {
@@ -610,6 +611,18 @@ function BrowsePage({ setCurrentPage }) {
             datePosted: d.datePosted || new Date().toISOString(),
             ...d,
         });
+
+        // Show cached donations from localStorage immediately so the Browse page
+        // displays items while we fetch an updated list from the server.
+        try {
+            const cached = JSON.parse(localStorage.getItem('donations') || '[]');
+            if (Array.isArray(cached) && cached.length > 0) {
+                const normalizedCached = cached.map(normalize);
+                if (mounted) setDonations(normalizedCached);
+            }
+        } catch (err) {
+            // ignore malformed localStorage
+        }
 
         (async () => {
             try {
@@ -687,6 +700,18 @@ function BrowsePage({ setCurrentPage }) {
         alert(`Request sent! You can contact the donor at: ${donation.contactInformation}`);
     };
 
+    // Close modal helper
+    const closeModal = () => setSelectedDonation(null);
+
+    // Close modal on ESC
+    useEffect(() => {
+        const onKey = (e) => { if (e.key === 'Escape') closeModal(); };
+        if (selectedDonation) {
+            window.addEventListener('keydown', onKey);
+            return () => window.removeEventListener('keydown', onKey);
+        }
+    }, [selectedDonation]);
+
     const pageContentStyle = {
         padding: '40px 20px',
         maxWidth: '1200px',
@@ -701,13 +726,20 @@ function BrowsePage({ setCurrentPage }) {
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
+        // allow cards to sit left-to-right but wrap to new rows on smaller screens
+        flex: '0 1 320px',
+        minWidth: '240px',
     };
 
+    // Layout changed to a horizontal, scrollable row so items are listed left->right
     const itemGridStyle = {
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+        display: 'flex',
+        flexDirection: 'row',
+        flexWrap: 'wrap',
         gap: '20px',
         padding: '20px 0',
+        // left-to-right flow; wrapping prevents continuous horizontal scroll
+        justifyContent: 'flex-start',
     };
 
     const imageStyle = {
@@ -718,6 +750,42 @@ function BrowsePage({ setCurrentPage }) {
 
     const contentStyle = {
         padding: '15px',
+    };
+
+    // Modal styles for item detail view
+    const modalOverlayStyle = {
+        position: 'fixed',
+        inset: 0,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1000,
+        padding: '20px',
+    };
+
+    const modalStyle = {
+        backgroundColor: '#fff',
+        borderRadius: '10px',
+        maxWidth: '900px',
+        width: '100%',
+        maxHeight: '90vh',
+        overflowY: 'auto',
+        boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
+        display: 'flex',
+        flexDirection: 'column',
+    };
+
+    const modalImageStyle = {
+        width: '100%',
+        height: '420px',
+        objectFit: 'cover',
+        borderTopLeftRadius: '10px',
+        borderTopRightRadius: '10px',
+    };
+
+    const modalInnerContent = {
+        padding: '18px',
     };
 
     return (
@@ -789,60 +857,101 @@ function BrowsePage({ setCurrentPage }) {
                 {/* Item Grid */}
                 {filteredDonations.length > 0 ? (
                     <div style={itemGridStyle}>
-                        {filteredDonations.map(donation => (
-                            <div key={donation.id} style={itemCardStyle}>
-                                {donation.photos && donation.photos.length > 0 && (
-                                    <img
-                                        src={donation.photos[0]}
-                                        alt={donation.itemTitle}
-                                        style={imageStyle}
-                                    />
-                                )}
-                                <div style={contentStyle}>
-                                    <h3 style={{ margin: '0 0 8px 0', fontSize: '18px' }}>{donation.itemTitle}</h3>
-                                    <p style={{ margin: '0 0 8px 0', color: '#666', fontSize: '14px' }}>
-                                        {donation.description.length > 100 
-                                            ? donation.description.substring(0, 100) + '...'
-                                            : donation.description}
-                                    </p>
-                                    <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-                                        <span style={{ 
-                                            padding: '4px 8px', 
-                                            backgroundColor: '#e5e7eb', 
-                                            borderRadius: '4px', 
-                                            fontSize: '12px' 
-                                        }}>
-                                            {donation.category}
-                                        </span>
-                                        <span style={{ 
-                                            padding: '4px 8px', 
-                                            backgroundColor: '#e5e7eb', 
-                                            borderRadius: '4px', 
-                                            fontSize: '12px' 
-                                        }}>
-                                            {donation.condition}
-                                        </span>
+                                {filteredDonations.map(donation => (
+                                    <div key={donation.id} style={itemCardStyle} onClick={() => setSelectedDonation(donation)}>
+                                        {donation.photos && donation.photos.length > 0 && (
+                                            <img
+                                                src={donation.photos[0]}
+                                                alt={donation.itemTitle}
+                                                style={imageStyle}
+                                            />
+                                        )}
+                                        <div style={contentStyle}>
+                                            <h3 style={{ margin: '0 0 8px 0', fontSize: '18px' }}>{donation.itemTitle}</h3>
+                                            <p style={{ margin: '0 0 8px 0', color: '#666', fontSize: '14px' }}>
+                                                {donation.description.length > 100 
+                                                    ? donation.description.substring(0, 100) + '...'
+                                                    : donation.description}
+                                            </p>
+                                            <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                                                <span style={{ 
+                                                    padding: '4px 8px', 
+                                                    backgroundColor: '#e5e7eb', 
+                                                    borderRadius: '4px', 
+                                                    fontSize: '12px' 
+                                                }}>
+                                                    {donation.category}
+                                                </span>
+                                                <span style={{ 
+                                                    padding: '4px 8px', 
+                                                    backgroundColor: '#e5e7eb', 
+                                                    borderRadius: '4px', 
+                                                    fontSize: '12px' 
+                                                }}>
+                                                    {donation.condition}
+                                                </span>
+                                            </div>
+                                            <p style={{ margin: '0 0 8px 0', fontSize: '14px' }}>
+                                                📍 {donation.pickupLocation}
+                                            </p>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleRequest(donation.id); if (selectedDonation && selectedDonation.id === donation.id) closeModal(); }}
+                                                style={{
+                                                    ...commonStyles.button('#16a34a'),
+                                                    width: '100%',
+                                                    marginTop: '10px'
+                                                }}
+                                            >
+                                                Request Item
+                                            </button>
+                                        </div>
                                     </div>
-                                    <p style={{ margin: '0 0 8px 0', fontSize: '14px' }}>
-                                        📍 {donation.pickupLocation}
-                                    </p>
+                                ))}
+                    </div>
+                ) : (
+                    <div style={{ textAlign: 'center', padding: '50px', color: '#999' }}>
+                        No items currently available.
+                    </div>
+                )}
+
+                {/* Item Detail Modal */}
+                {selectedDonation && (
+                    <div style={modalOverlayStyle} onClick={closeModal}>
+                        <div style={modalStyle} onClick={(e) => e.stopPropagation()}>
+                            {selectedDonation.photos && selectedDonation.photos.length > 0 && (
+                                <img src={selectedDonation.photos[0]} alt={selectedDonation.itemTitle} style={modalImageStyle} />
+                            )}
+                            <div style={modalInnerContent}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+                                    <div style={{ flex: 1 }}>
+                                        <h2 style={{ margin: 0 }}>{selectedDonation.itemTitle}</h2>
+                                        <p style={{ color: '#666', marginTop: '6px' }}>Posted: {new Date(selectedDonation.datePosted).toLocaleString()}</p>
+                                    </div>
+                                    <div>
+                                        <button onClick={closeModal} style={{ ...commonStyles.button('#ef4444', true) }}>Close</button>
+                                    </div>
+                                </div>
+
+                                <p style={{ marginTop: '12px', color: '#333' }}>{selectedDonation.description}</p>
+
+                                <div style={{ display: 'flex', gap: '10px', marginTop: '12px', flexWrap: 'wrap' }}>
+                                    <span style={{ padding: '6px 10px', backgroundColor: '#e5e7eb', borderRadius: '6px' }}>{selectedDonation.category}</span>
+                                    <span style={{ padding: '6px 10px', backgroundColor: '#e5e7eb', borderRadius: '6px' }}>{selectedDonation.condition}</span>
+                                </div>
+
+                                <p style={{ marginTop: '14px' }}>📍 Pickup: <strong>{selectedDonation.pickupLocation}</strong></p>
+                                <p>📧 Contact: <strong>{selectedDonation.contactInformation || 'Not provided'}</strong></p>
+
+                                <div style={{ marginTop: '18px', display: 'flex', gap: '12px' }}>
                                     <button
-                                        onClick={() => handleRequest(donation.id)}
-                                        style={{
-                                            ...commonStyles.button('#16a34a'),
-                                            width: '100%',
-                                            marginTop: '10px'
-                                        }}
+                                        onClick={() => { handleRequest(selectedDonation.id); closeModal(); }}
+                                        style={{ ...commonStyles.button('#16a34a') }}
                                     >
                                         Request Item
                                     </button>
                                 </div>
                             </div>
-                        ))}
-                    </div>
-                ) : (
-                    <div style={{ textAlign: 'center', padding: '50px', color: '#999' }}>
-                        No items currently available.
+                        </div>
                     </div>
                 )}
             </div>
@@ -1107,21 +1216,79 @@ function HomePage({ setCurrentPage }) {
 // --- 5. MAIN APP COMPONENT (Handles Routing) ---
 // =========================================================
 export default function App() {
-  // Check localStorage for auth state on initial load
-  const [currentPage, setCurrentPage] = useState(() => {
-    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-    return isLoggedIn ? 'home' : 'auth';
-  });
+    // Start on a splash/start page. Clicking the logo navigates to auth.
+    const [currentPage, setCurrentPage] = useState('splash');
 
-  if (currentPage === 'auth') {
-    return <AuthPage setCurrentPage={setCurrentPage} />;
-  }
-  if (currentPage === 'browse') {
-    return <BrowsePage setCurrentPage={setCurrentPage} />;
-  }
-  if (currentPage === 'donate') {
-    return <DonatePage setCurrentPage={setCurrentPage} />;
-  }
+    if (currentPage === 'splash') {
+        return <SplashPage setCurrentPage={setCurrentPage} />;
+    }
+    if (currentPage === 'auth') {
+        return <AuthPage setCurrentPage={setCurrentPage} />;
+    }
+    if (currentPage === 'browse') {
+        return <BrowsePage setCurrentPage={setCurrentPage} />;
+    }
+    if (currentPage === 'donate') {
+        return <DonatePage setCurrentPage={setCurrentPage} />;
+    }
 
-  return <HomePage setCurrentPage={setCurrentPage} />;
+    return <HomePage setCurrentPage={setCurrentPage} />;
+}
+
+// =========================================================
+// --- 2. SPLASH / START PAGE ---
+// =========================================================
+function SplashPage({ setCurrentPage }) {
+    const styles = {
+        container: {
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexDirection: 'column',
+            minHeight: '100vh',
+            background: 'linear-gradient(180deg,#f0fbf6 0%, #e6f7ee 100%)',
+        },
+        box: {
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            background: '#fff',
+            padding: '20px 28px',
+            borderRadius: '12px',
+            boxShadow: '0 8px 30px rgba(0,0,0,0.08)',
+            cursor: 'pointer',
+            userSelect: 'none',
+        },
+        title: {
+            fontSize: '28px',
+            fontWeight: '700',
+            color: '#000',
+            fontFamily: "'Pacifico', 'Segoe UI', Tahoma, sans-serif",
+            letterSpacing: '0.6px',
+            fontStyle: 'normal'
+        },
+        subtitle: {
+            marginTop: '12px',
+            color: '#555',
+            fontSize: '14px'
+        }
+    };
+
+    const handleEnter = () => {
+        // send user to auth (login/register)
+        setCurrentPage('auth');
+    };
+
+    return (
+        <div style={styles.container}>
+            <div style={styles.box} onClick={handleEnter} role="button" aria-label="Open Waste2Need">
+                <Logo width={48} height={48} />
+                <div>
+                    <div style={styles.title}>Waste2Need</div>
+                    <div style={{ fontSize: '12px', color: '#777' }}>Give. Share. Reuse.</div>
+                </div>
+            </div>
+            <div style={styles.subtitle}>Click the logo to sign in or register</div>
+        </div>
+    );
 }
