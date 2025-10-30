@@ -1305,6 +1305,12 @@ export default function App() {
 // --- 2. SPLASH / START PAGE ---
 // =========================================================
 function SplashPage({ setCurrentPage }) {
+    const [isVisible, setIsVisible] = useState(false);
+
+    useEffect(() => {
+        setIsVisible(true); // Trigger animation on mount
+    }, []);
+
     const styles = {
         container: {
             display: 'flex',
@@ -1312,31 +1318,48 @@ function SplashPage({ setCurrentPage }) {
             justifyContent: 'center',
             flexDirection: 'column',
             minHeight: '100vh',
-            background: 'linear-gradient(180deg,#f0fbf6 0%, #e6f7ee 100%)',
+            background: 'linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.7))',
+            backgroundImage: "url('https://images.unsplash.com/photo-1593113598332-cd288d649433?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2000&q=80')", // Sustainability/recycling themed image
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundBlendMode: 'overlay',
         },
         box: {
             display: 'flex',
             alignItems: 'center',
             gap: '12px',
-            background: '#fff',
+            background: 'rgba(255, 255, 255, 0.95)',
             padding: '20px 28px',
             borderRadius: '12px',
-            boxShadow: '0 8px 30px rgba(0,0,0,0.08)',
+            boxShadow: '0 8px 30px rgba(0,0,0,0.2)',
             cursor: 'pointer',
             userSelect: 'none',
+            transform: `translateY(${isVisible ? '0' : '100px'}) scale(${isVisible ? '1' : '0.8'})`,
+            opacity: isVisible ? 1 : 0,
+            transition: 'transform 0.8s ease-out, opacity 0.8s ease-out',
+            backdropFilter: 'blur(10px)',
         },
         title: {
-            fontSize: '28px',
+            fontSize: '32px',
             fontWeight: '700',
-            color: '#000',
+            color: '#16a34a',
             fontFamily: "'Pacifico', 'Segoe UI', Tahoma, sans-serif",
             letterSpacing: '0.6px',
-            fontStyle: 'normal'
+            fontStyle: 'normal',
+            textShadow: '0 1px 2px rgba(0,0,0,0.1)',
+            transform: `translateX(${isVisible ? '0' : '-50px'})`,
+            opacity: isVisible ? 1 : 0,
+            transition: 'transform 0.8s ease-out 0.2s, opacity 0.8s ease-out 0.2s'
         },
         subtitle: {
             marginTop: '12px',
-            color: '#555',
-            fontSize: '14px'
+            color: '#fff',
+            fontSize: '16px',
+            fontWeight: '500',
+            textShadow: '0 1px 3px rgba(0,0,0,0.2)',
+            transform: `translateY(${isVisible ? '0' : '20px'})`,
+            opacity: isVisible ? 1 : 0,
+            transition: 'transform 0.8s ease-out 0.4s, opacity 0.8s ease-out 0.4s'
         }
     };
 
@@ -1348,13 +1371,25 @@ function SplashPage({ setCurrentPage }) {
     return (
         <div style={styles.container}>
             <div style={styles.box} onClick={handleEnter} role="button" aria-label="Open Waste2Need">
-                <Logo width={48} height={48} />
+                <div style={{
+                    transform: `rotate(${isVisible ? '0' : '-180deg'}) scale(${isVisible ? '1' : '0'})`,
+                    opacity: isVisible ? 1 : 0,
+                    transition: 'transform 1s ease-out, opacity 1s ease-out',
+                }}>
+                    <Logo width={48} height={48} />
+                </div>
                 <div>
                     <div style={styles.title}>Waste2Need</div>
-                    <div style={{ fontSize: '12px', color: '#777' }}>Give. Share. Reuse.</div>
+                    <div style={{
+                        fontSize: '14px',
+                        color: '#16a34a',
+                        opacity: isVisible ? 1 : 0,
+                        transform: `translateX(${isVisible ? '0' : '-20px'})`,
+                        transition: 'transform 0.8s ease-out 0.3s, opacity 0.8s ease-out 0.3s'
+                    }}>Give. Share. Reuse.</div>
                 </div>
             </div>
-            <div style={styles.subtitle}>Click the logo to sign in or register</div>
+            <div style={styles.subtitle}>Click to sign in or register</div>
         </div>
     );
 }
