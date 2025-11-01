@@ -1,0 +1,20 @@
+{
+  "name": "waste-to-needs",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vamshika06-gif/waste-to-needs.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/vamshika06-gif/waste-to-needs/issues"
+  },
+  "homepage": "https://github.com/vamshika06-gif/waste-to-needs#readme"
+}
