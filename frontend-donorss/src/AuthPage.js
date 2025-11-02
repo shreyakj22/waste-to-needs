@@ -54,7 +54,7 @@ export default function AuthPage({ setCurrentPage }) {
     }
     
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const response = await fetch(' https://waste-to-needs-5.onrender.com/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -98,7 +98,7 @@ export default function AuthPage({ setCurrentPage }) {
       return;
     }
     try {
-      const response = await fetch('http://localhost:5000/api/auth/complete-register', {
+      const response = await fetch(' https://waste-to-needs-5.onrender.com/api/auth/complete-register', {
 
         method: 'POST',
         headers: {
@@ -133,7 +133,7 @@ export default function AuthPage({ setCurrentPage }) {
   }
 
   try {
-    const res = await fetch('http://localhost:5000/api/auth/register', {
+    const res = await fetch('h https://waste-to-needs-5.onrender.com/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
@@ -177,7 +177,7 @@ export default function AuthPage({ setCurrentPage }) {
   const verifyCode = async () => {
     if (!registerEmail || !verificationCodeInput) { alert('Provide email and code'); return; }
     try {
-      const res = await fetch('http://localhost:5000/api/auth/verify-code', {
+      const res = await fetch(' https://waste-to-needs-5.onrender.com/api/auth/verify-code', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: registerEmail, code: verificationCodeInput })
       });
       if (res.ok) {
