@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import AuthPage from './AuthPage';
 
 // API base (can be overridden by frontend-donorss/.env)
-const API_BASE = process.env.REACT_APP_API_URL || 'https://waste-to-needs-5.onrender.com';
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 // =========================================================
 // --- 1. STYLES: Common Styles for all pages ---
 // =========================================================
@@ -644,12 +644,7 @@ function BrowsePage({ setCurrentPage, addToCart, cart }) {
 
         (async () => {
             try {
-                const res = await fetch(`${API_BASE}/api/donations`);
-                if (!res.ok) throw new Error('bad response');
-                const body = await res.json();
-                const serverDonations = body.donations || body || [];
-                const normalized = serverDonations.map(normalize);
-
+            
                 // If we have locally saved donations (offline fallback), try to sync them now
                 try {
                     const local = JSON.parse(localStorage.getItem('donations') || '[]');
@@ -676,7 +671,7 @@ function BrowsePage({ setCurrentPage, addToCart, cart }) {
                     console.warn('Browse: bulk sync failed', syncErr);
                 }
 
-                if (mounted) setDonations(normalized);
+                if (mounted) setDonations (normalize);
             } catch (err) {
                 // fallback to localStorage
                 const loadedDonations = JSON.parse(localStorage.getItem('donations') || '[]');
