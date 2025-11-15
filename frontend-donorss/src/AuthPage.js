@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from "react";
-
 export default function AuthPage({ setCurrentPage }) {
   const [view, setView] = useState("login");
   const [captcha, setCaptcha] = useState("");
@@ -54,7 +53,7 @@ export default function AuthPage({ setCurrentPage }) {
     }
     
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const response = await fetch('http://localhost:5000/api/donations', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

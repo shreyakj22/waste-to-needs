@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import AuthPage from './AuthPage';
 
 // API base (can be overridden by frontend-donorss/.env)
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+const API_BASE = process.env.REACT_APP_API_URL || 'https://waste-to-needs-5.onrender.com';
 // =========================================================
 // --- 1. STYLES: Common Styles for all pages ---
 // =========================================================
