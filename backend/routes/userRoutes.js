@@ -44,6 +44,45 @@ router.post("/register", async (req, res) => {
   }
 });
 
+// POST /login - simple auth (passwords are stored plaintext in this demo)
+router.post("/login", async (req, res) => {
+  try {
+    console.log("Auth: /login payload:", req.body);
+    const { email, password } = req.body || {};
+    if (!email || !password) return res.status(400).json({ error: "Email and password required" });
+
+    const user = await User.findOne({ email });
+    if (!user) return res.status(401).json({ error: "Invalid credentials" });
+
+    // NOTE: passwords are stored in plaintext in this codebase — replace with hashing in production
+    if (user.password !== password) return res.status(401).json({ error: "Invalid credentials" });
+
+    return res.json({ user: { name: user.name, email: user.email, isVerified: user.isVerified } });
+  } catch (err) {
+    console.error("❌ Login error:", err);
+    return res.status(500).json({ error: "Server error during login" });
+  }
+});
+
+// POST /complete-register - finalize registration after verification
+router.post("/complete-register", async (req, res) => {
+  try {
+    console.log("Auth: /complete-register payload:", req.body);
+    const { name, email, password } = req.body || {};
+    if (!name || !email || !password) return res.status(400).json({ error: "Missing fields" });
+
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ error: "User not found" });
+    if (!user.isVerified) return res.status(400).json({ error: "Email not verified" });
+
+    // At this point registration was already created by /register; respond success
+    return res.json({ success: true, message: "Registration complete", user: { name: user.name, email: user.email } });
+  } catch (err) {
+    console.error("❌ complete-register error:", err);
+    return res.status(500).json({ error: "Server error during complete-register" });
+  }
+});
+
 // ✅ Verify route (user submits code)
 router.post("/verify", async (req, res) => {
   try {
