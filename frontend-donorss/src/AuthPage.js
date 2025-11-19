@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 
-// Configurable API base so frontend can point to different backends in dev/prod
-const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:5000";
+import { API_BASE } from './config';
 
 export default function AuthPage({ setCurrentPage }) {
   const [view, setView] = useState("login");

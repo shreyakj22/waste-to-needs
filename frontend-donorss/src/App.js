@@ -1,9 +1,11 @@
 
 import React, { useState, useEffect } from "react";
 import AuthPage from './AuthPage';
+import DashboardPage from './Dashboard';
+import NearbyPage from './Nearby';
 
 // API base (can be overridden by frontend-donorss/.env)
-const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:5000";
+import { API_BASE } from './config';
 
 // =========================================================
 // --- 1. STYLES: Common Styles for all pages ---
@@ -354,8 +356,9 @@ function DonatePage({ setCurrentPage, cart }) {
                         Waste2Need
                 </div>
                 <div style={commonStyles.navLinks}>
-                    <div onClick={() => setCurrentPage('browse')} style={commonStyles.link(false)}> Browse Items </div>
-                    <div onClick={() => setCurrentPage('donate')} style={commonStyles.link(true)}> Donate Items </div>
+                                <div onClick={() => setCurrentPage('browse')} style={commonStyles.link(false)}> Browse Items </div>
+                                <div onClick={() => setCurrentPage('donate')} style={commonStyles.link(true)}> Donate Items </div>
+                                <div onClick={() => setCurrentPage('dashboard')} style={commonStyles.link(false)}> Dashboard </div>
                     <div onClick={() => setCurrentPage('cart')} style={commonStyles.link(false)}>
                         Cart ({cart ? cart.reduce((s,i)=>s+(i.qty||1),0) : 0})
                     </div>
@@ -592,13 +595,18 @@ function DonatePage({ setCurrentPage, cart }) {
 // =========================================================
 // --- 3. BROWSE PAGE COMPONENT ---
 // =========================================================
-function BrowsePage({ setCurrentPage, addToCart, cart }) {
+function BrowsePage({ setCurrentPage, addToCart, cart, removeFromCart, updateQty }) {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [donations, setDonations] = useState([]);
     const [selectedDonation, setSelectedDonation] = useState(null);
     // Responsive column count for the grid: 1 (small), 2 (medium), 3 (large)
     const [columns, setColumns] = useState(3);
+    const [nearbySuggestions, setNearbySuggestions] = useState([]);
+    const [nearbyLoading, setNearbyLoading] = useState(false);
+    const [nearbyError, setNearbyError] = useState(null);
+    const [userPosNearby, setUserPosNearby] = useState(null);
+    const [geoPermState, setGeoPermState] = useState(null);
 
     useEffect(() => {
         const updateColumns = () => {
@@ -610,6 +618,34 @@ function BrowsePage({ setCurrentPage, addToCart, cart }) {
         updateColumns();
         window.addEventListener('resize', updateColumns);
         return () => window.removeEventListener('resize', updateColumns);
+    }, []);
+
+    // Auto-fetch nearby suggestions when Browse mounts
+    useEffect(() => {
+        let mounted = true;
+        if (!navigator.geolocation) return;
+        // query permission state
+        if (navigator.permissions && navigator.permissions.query) {
+            try {
+                navigator.permissions.query({ name: 'geolocation' }).then(p => {
+                    setGeoPermState(p.state);
+                    p.onchange = () => setGeoPermState(p.state);
+                }).catch(() => {});
+            } catch (e) {}
+        }
+        setNearbyLoading(true);
+        navigator.geolocation.getCurrentPosition(async (pos) => {
+            if (!mounted) return;
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            // reuse helper that also sets userPosNearby and suggestions
+            await fetchNearbyForCoords(lat, lng);
+            }, (err) => {
+            setNearbyLoading(false);
+            // user denied or unavailable
+        }, { enableHighAccuracy: false, timeout: 8000 });
+
+        return () => { mounted = false };
     }, []);
 
     // Load donations from backend when component mounts, fallback to localStorage
@@ -672,7 +708,26 @@ function BrowsePage({ setCurrentPage, addToCart, cart }) {
                     console.warn('Browse: bulk sync failed', syncErr);
                 }
 
-                if (mounted) setDonations (normalize);
+                // Fetch donations from the server and set them into state
+                try {
+                    const res = await fetch(`${API_BASE}/api/donations`);
+                    if (res.ok) {
+                        const serverList = await res.json();
+                        const normalized = (serverList.donations || serverList || []).map(normalize);
+                        if (mounted) setDonations(normalized);
+                    } else {
+                        console.warn('Browse: fetching donations responded', res.status);
+                        // fallback to localStorage
+                        const loadedDonations = JSON.parse(localStorage.getItem('donations') || '[]');
+                        const normalized = (loadedDonations || []).map(normalize);
+                        if (mounted) setDonations(normalized);
+                    }
+                } catch (fetchErr) {
+                    console.warn('Browse: fetch donations failed', fetchErr);
+                    const loadedDonations = JSON.parse(localStorage.getItem('donations') || '[]');
+                    const normalized = (loadedDonations || []).map(normalize);
+                    if (mounted) setDonations(normalized);
+                }
             } catch (err) {
                 // fallback to localStorage
                 const loadedDonations = JSON.parse(localStorage.getItem('donations') || '[]');
@@ -692,26 +747,89 @@ function BrowsePage({ setCurrentPage, addToCart, cart }) {
         return matchesSearch && matchesCategory && donation.status === 'available';
     });
 
+    // small helper: Haversine to compute distance in km between two lat/lng
+    function haversineKm(lat1, lon1, lat2, lon2) {
+        if (!isFinite(lat1) || !isFinite(lon1) || !isFinite(lat2) || !isFinite(lon2)) return null;
+        const toRad = (deg) => deg * Math.PI / 180;
+        const R = 6371; // km
+        const dLat = toRad(lat2 - lat1);
+        const dLon = toRad(lon2 - lon1);
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return Math.round(R * c * 10) / 10; // one decimal km
+    }
+
+    // Helper to fetch nearby donations for given coords and update suggestions
+    async function fetchNearbyForCoords(lat, lng, radius = 20000) {
+        setNearbyLoading(true);
+        setNearbyError(null);
+        setUserPosNearby({ lat, lng });
+        try {
+            const res = await fetch(`${API_BASE}/api/donations/nearby?lat=${lat}&lng=${lng}&radius=${radius}`);
+            if (!res.ok) throw new Error(`Server ${res.status}`);
+            const body = await res.json();
+            const list = (body.donations || []).map(d => ({ ...d, distanceKm: haversineKm(lat, lng, d.location?.coordinates?.[1], d.location?.coordinates?.[0]) }));
+            list.sort((a, b) => (a.distanceKm || 1e9) - (b.distanceKm || 1e9));
+            setNearbySuggestions(list.slice(0, 6));
+        } catch (err) {
+            console.warn('Nearby fetch failed', err);
+            setNearbyError('Could not load nearby suggestions');
+        } finally {
+            setNearbyLoading(false);
+        }
+    }
+
     const handleRequest = (donationId) => {
         const userEmail = localStorage.getItem('userEmail');
-        const updatedDonations = donations.map(donation => {
-            if (donation.id === donationId) {
-                return {
-                    ...donation,
-                    status: 'requested',
-                    requestedBy: userEmail,
-                    requestDate: new Date().toISOString()
-                };
-            }
-            return donation;
-        });
 
-        localStorage.setItem('donations', JSON.stringify(updatedDonations));
-        setDonations(updatedDonations);
-        
-        // Get donor's contact information
-        const donation = donations.find(d => d.id === donationId);
-        alert(`Request sent! You can contact the donor at: ${donation.contactInformation}`);
+        // Try to update on server first
+        (async () => {
+            try {
+                const res = await fetch(`${API_BASE}/api/donations/${donationId}/request`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ receiverEmail: userEmail })
+                });
+
+                if (!res.ok) {
+                    const body = await res.json().catch(() => ({}));
+                    throw new Error(body.error || `Server responded ${res.status}`);
+                }
+
+                const { donation: updated } = await res.json();
+
+                // Remove or update the item locally so it's not shown in Browse
+                const updatedDonations = donations.map(d => d.id === (updated._id || updated.id) ? ({ ...d, ...updated }) : d).filter(d => d.status === 'available');
+                setDonations(updatedDonations);
+
+                // Remove from cart if present
+                try { if (removeFromCart) removeFromCart(donationId); } catch (e) { console.warn('removeFromCart failed', e); }
+
+                alert('Request sent! Donor will be notified.');
+            } catch (err) {
+                console.warn('Server request failed, falling back to local update:', err);
+                const updatedDonations = donations.map(donation => {
+                    if (donation.id === donationId) {
+                        return {
+                            ...donation,
+                            status: 'requested',
+                            requestedBy: userEmail,
+                            requestDate: new Date().toISOString()
+                        };
+                    }
+                    return donation;
+                });
+
+                localStorage.setItem('donations', JSON.stringify(updatedDonations));
+                setDonations(updatedDonations.filter(d => d.status === 'available'));
+
+                // Remove from cart locally as well
+                try { if (removeFromCart) removeFromCart(donationId); } catch (e) { console.warn('removeFromCart failed', e); }
+
+                const donation = donations.find(d => d.id === donationId);
+                alert(`Request saved locally. Contact donar at: ${donation?.contactInformation || 'not provided'}`);
+            }
+        })();
     };
 
     // Close modal helper
@@ -812,6 +930,7 @@ function BrowsePage({ setCurrentPage, addToCart, cart }) {
                 <div style={commonStyles.navLinks}>
                     <div onClick={() => setCurrentPage('browse')} style={commonStyles.link(true)}> Browse Items </div>
                     <div onClick={() => setCurrentPage('donate')} style={commonStyles.link(false)}> Donate Items </div>
+                    <div onClick={() => setCurrentPage('dashboard')} style={commonStyles.link(false)}> Dashboard </div>
                     <div onClick={() => setCurrentPage('cart')} style={commonStyles.link(false)}>Cart ({cart ? cart.reduce((s,i)=>s+(i.qty||1),0) : 0})</div>
                     {/* About link removed */}
                     <button 
@@ -836,6 +955,60 @@ function BrowsePage({ setCurrentPage, addToCart, cart }) {
                     Find items donated by your community members
                 </p>
 
+                {/* Nearby suggestions (auto/manual) */}
+                {(!nearbySuggestions || nearbySuggestions.length === 0) && (
+                    <div style={{ margin: '12px 0', display: 'flex', justifyContent: 'center', flexDirection: 'column', gap: 8 }}>
+                        {geoPermState === 'denied' ? (
+                            <div style={{ padding: 12, background: '#fff3f2', border: '1px solid #ffd1cc', borderRadius: 8 }}>
+                                <strong style={{ color: '#b91c1c' }}>Location blocked for this site</strong>
+                                <div style={{ marginTop: 8 }}>Enable location via the lock icon in the address bar, then click "Find items near me".</div>
+                            </div>
+                        ) : (
+                            <div style={{ display: 'flex', justifyContent: 'center' }}>
+                                <button onClick={() => {
+                                    // explicit trigger: ask for geolocation again
+                                    if (!navigator.geolocation) return setNearbyError('Geolocation not supported');
+                                    setNearbyLoading(true);
+                                    navigator.geolocation.getCurrentPosition((pos) => {
+                                        fetchNearbyForCoords(pos.coords.latitude, pos.coords.longitude);
+                                    }, (err) => {
+                                        setNearbyLoading(false);
+                                        setNearbyError('Geolocation denied or unavailable');
+                                    }, { enableHighAccuracy: false, timeout: 8000 });
+                                }} style={{ ...commonStyles.button('#10b981') }}>Find items near me</button>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {nearbyError && (
+                    <div style={{ margin: '12px auto', maxWidth: 800, padding: 12, background: '#fff8f0', border: '1px solid #ffd8c2', borderRadius: 8, color: '#9a3412' }}>
+                        <strong>Nearby search failed:</strong> {nearbyError}
+                        <div style={{ marginTop: 6, fontSize: 13, color: '#7a2e1f' }}>Open DevTools → Network to check for `/api/donations/nearby` requests or allow location permissions.</div>
+                    </div>
+                )}
+
+                {nearbySuggestions && nearbySuggestions.length > 0 && (
+                    <div style={{ margin: '18px 0', padding: 12, background: '#fff', borderRadius: 8, boxShadow: '0 2px 6px rgba(0,0,0,0.04)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                            <strong>Items Near You</strong>
+                            <div style={{ fontSize: 12, color: '#666' }}>{nearbyLoading ? 'Updating…' : `${nearbySuggestions.length} suggestions`}</div>
+                        </div>
+                        <div style={{ display: 'flex', gap: 10, overflowX: 'auto' }}>
+                            {nearbySuggestions.map(d => (
+                                <div key={d._id || d.id} style={{ minWidth: 220, border: '1px solid #eee', borderRadius: 8, padding: 10, background: '#fafafa' }}>
+                                    <div style={{ fontWeight: 700 }}>{d.itemTitle}</div>
+                                    <div style={{ fontSize: 12, color: '#555' }}>{d.pickupLocation}</div>
+                                    <div style={{ marginTop: 6, color: '#444' }}>{d.distanceKm != null ? `${d.distanceKm} km` : ''}</div>
+                                    <div style={{ marginTop: 8 }}>
+                                        <button onClick={(e) => { e.stopPropagation(); handleRequest(d._id || d.id); }} style={{ ...commonStyles.button('#10b981') }}>Request</button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {/* Search Bar & Filter */}
                 <div style={{ display: 'flex', justifyContent: 'center' }}>
                     <div style={commonStyles.inputContainer}>
@@ -859,6 +1032,7 @@ function BrowsePage({ setCurrentPage, addToCart, cart }) {
                             <option>Clothing</option>
                             <option>Other</option>
                         </select>
+                                    <button onClick={() => setCurrentPage('nearby')} style={{ marginLeft: 12, padding: '6px 10px', borderRadius: 8, background: '#10b981', color: '#fff', border: 'none' }}>Show nearby</button>
                     </div>
                 </div>
 
@@ -886,6 +1060,11 @@ function BrowsePage({ setCurrentPage, addToCart, cart }) {
                                                     ? donation.description.substring(0, 100) + '...'
                                                     : donation.description}
                                             </p>
+                                            {userPosNearby && donation.location && donation.location.coordinates && (
+                                                <div style={{ color: '#444', fontSize: '13px', marginBottom: '8px' }}>
+                                                    {haversineKm(userPosNearby.lat, userPosNearby.lng, donation.location.coordinates[1], donation.location.coordinates[0])} km away
+                                                </div>
+                                            )}
                                             <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
                                                 <span style={{ 
                                                     padding: '4px 8px', 
@@ -1288,10 +1467,16 @@ export default function App() {
         return <CartPage setCurrentPage={setCurrentPage} cart={cart} removeFromCart={removeFromCart} updateQty={updateQty} />;
     }
     if (currentPage === 'browse') {
-        return <BrowsePage setCurrentPage={setCurrentPage} addToCart={addToCart} cart={cart} />;
+        return <BrowsePage setCurrentPage={setCurrentPage} addToCart={addToCart} cart={cart} removeFromCart={removeFromCart} updateQty={updateQty} />;
     }
     if (currentPage === 'donate') {
         return <DonatePage setCurrentPage={setCurrentPage} cart={cart} />;
+    }
+    if (currentPage === 'nearby') {
+        return <NearbyPage setCurrentPage={setCurrentPage} />;
+    }
+    if (currentPage === 'dashboard') {
+        return <DashboardPage setCurrentPage={setCurrentPage} />;
     }
 
     return <HomePage setCurrentPage={setCurrentPage} cart={cart} />;
@@ -1433,6 +1618,7 @@ function CartPage({ setCurrentPage, cart, removeFromCart, updateQty }) {
                 <div style={commonStyles.navLinks}>
                     <div onClick={() => setCurrentPage('browse')} style={commonStyles.link(false)}> Browse Items </div>
                     <div onClick={() => setCurrentPage('donate')} style={commonStyles.link(false)}> Donate Items </div>
+                    <div onClick={() => setCurrentPage('dashboard')} style={commonStyles.link(false)}> Dashboard </div>
                     <div onClick={() => setCurrentPage('auth')} style={commonStyles.link(false)}>Logout</div>
                 </div>
             </nav>

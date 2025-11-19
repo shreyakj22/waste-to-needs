@@ -8,6 +8,8 @@ const userSchema = new mongoose.Schema(
     verificationCode: { type: String },
     isVerified: { type: Boolean, default: false },
     dateCreated: { type: Date, default: Date.now },
+    // Credits awarded to users for donating items
+    credits: { type: Number, default: 0 },
   },
   {
     timestamps: true,
