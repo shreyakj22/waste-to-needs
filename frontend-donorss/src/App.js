@@ -747,6 +747,42 @@ function BrowsePage({ setCurrentPage, addToCart, cart, removeFromCart, updateQty
         return matchesSearch && matchesCategory && donation.status === 'available';
     });
 
+    // --- Request limits: helper functions to enforce 3 requests per receiver per calendar month ---
+    const REQUEST_HISTORY_KEY = 'w2n_request_history';
+
+    const getRequestsThisMonth = (email) => {
+        if (!email) return 0;
+        try {
+            const raw = localStorage.getItem(REQUEST_HISTORY_KEY) || '{}';
+            const obj = JSON.parse(raw);
+            const list = Array.isArray(obj[email]) ? obj[email] : [];
+            const now = new Date();
+            const month = now.getMonth();
+            const year = now.getFullYear();
+            return list.filter(ts => {
+                try {
+                    const d = new Date(ts);
+                    return d.getMonth() === month && d.getFullYear() === year;
+                } catch (e) { return false; }
+            }).length;
+        } catch (e) {
+            return 0;
+        }
+    };
+
+    const recordRequest = (email) => {
+        if (!email) return;
+        try {
+            const raw = localStorage.getItem(REQUEST_HISTORY_KEY) || '{}';
+            const obj = JSON.parse(raw);
+            if (!Array.isArray(obj[email])) obj[email] = [];
+            obj[email].push(new Date().toISOString());
+            localStorage.setItem(REQUEST_HISTORY_KEY, JSON.stringify(obj));
+        } catch (e) {
+            // ignore storage errors
+        }
+    };
+
     // If the user has chosen to view only nearby items, derive the display set from nearbySuggestions
     const displayDonations = (showOnlyNearby && nearbySuggestions && nearbySuggestions.length > 0)
         ? // apply same search & category filters to nearbySuggestions
@@ -792,12 +828,26 @@ function BrowsePage({ setCurrentPage, addToCart, cart, removeFromCart, updateQty
  const handleRequest = (donationId) => {
     const userEmail = localStorage.getItem('userEmail');
 
+    // require logged-in user
+    if (!userEmail) {
+        alert('Please login or register before requesting an item.');
+        setCurrentPage('auth');
+        return;
+    }
+
+    // enforce 3 requests per calendar month
+    const used = getRequestsThisMonth(userEmail);
+    if (used >= 3) {
+        alert('Request limit reached: you have already requested 3 items this month. Please try next month.');
+        return;
+    }
+
     (async () => {
         try {
             const res = await fetch(`${API_BASE}/api/donations/${donationId}/request`, {
-                method: 'PUT',
+                method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ receiverEmail: userEmail })
+                body: JSON.stringify({ requesterEmail: userEmail, message: '' })
             });
 
             if (!res.ok) {
@@ -805,21 +855,21 @@ function BrowsePage({ setCurrentPage, addToCart, cart, removeFromCart, updateQty
                 throw new Error(body.error || `Server responded ${res.status}`);
             }
 
-            const { donation: updated } = await res.json();
+            const body = await res.json();
+            const updated = body.donation || body.donation || body;
 
-            // Update UI
-            const updatedDonations = donations
-                .map(d => d.id === (updated._id || updated.id) ? ({ ...d, ...updated }) : d)
-                .filter(d => d.status === 'available');
-            
-            setDonations(updatedDonations);
-
+            // Update UI: mark item requested locally as well
+            const updatedDonations = donations.map(d => d.id === (updated._id || updated.id) ? ({ ...d, ...updated }) : d);
+            setDonations(updatedDonations.filter(d => d.status === 'available'));
             if (removeFromCart) removeFromCart(donationId);
+
+            // record request usage for limit enforcement
+            recordRequest(userEmail);
 
             alert('Request sent! Donor has been notified.');
 
         } catch (err) {
-            console.warn("Server request failed:", err);
+            console.warn('Server request failed:', err);
 
             // FALLBACK LOCAL STORAGE
             const updatedDonations = donations.map(donation => {
@@ -834,10 +884,12 @@ function BrowsePage({ setCurrentPage, addToCart, cart, removeFromCart, updateQty
                 return donation;
             });
 
-            localStorage.setItem('donations', JSON.stringify(updatedDonations));
+            try { localStorage.setItem('donations', JSON.stringify(updatedDonations)); } catch (e) {}
             setDonations(updatedDonations.filter(d => d.status === 'available'));
-
             if (removeFromCart) removeFromCart(donationId);
+
+            // record request even when saved locally
+            recordRequest(userEmail);
 
             const donation = donations.find(d => d.id === donationId);
             alert(`Request saved locally. Contact donor at: ${donation?.contactInformation || 'not provided'}`);
