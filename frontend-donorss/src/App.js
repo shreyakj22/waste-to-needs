@@ -4,6 +4,7 @@ import AuthPage from './AuthPage';
 import DashboardPage from './Dashboard';
 import NearbyPage from './Nearby';
 
+
 // API base (can be overridden by frontend-donorss/.env)
 import { API_BASE } from './config';
 
@@ -779,58 +780,61 @@ function BrowsePage({ setCurrentPage, addToCart, cart, removeFromCart, updateQty
         }
     }
 
-    const handleRequest = (donationId) => {
-        const userEmail = localStorage.getItem('userEmail');
+ const handleRequest = (donationId) => {
+    const userEmail = localStorage.getItem('userEmail');
 
-        // Try to update on server first
-        (async () => {
-            try {
-                const res = await fetch(`${API_BASE}/api/donations/${donationId}/request`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ receiverEmail: userEmail })
-                });
+    (async () => {
+        try {
+            const res = await fetch(`${API_BASE}/api/donations/${donationId}/request`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ receiverEmail: userEmail })
+            });
 
-                if (!res.ok) {
-                    const body = await res.json().catch(() => ({}));
-                    throw new Error(body.error || `Server responded ${res.status}`);
-                }
-
-                const { donation: updated } = await res.json();
-
-                // Remove or update the item locally so it's not shown in Browse
-                const updatedDonations = donations.map(d => d.id === (updated._id || updated.id) ? ({ ...d, ...updated }) : d).filter(d => d.status === 'available');
-                setDonations(updatedDonations);
-
-                // Remove from cart if present
-                try { if (removeFromCart) removeFromCart(donationId); } catch (e) { console.warn('removeFromCart failed', e); }
-
-                alert('Request sent! Donor will be notified.');
-            } catch (err) {
-                console.warn('Server request failed, falling back to local update:', err);
-                const updatedDonations = donations.map(donation => {
-                    if (donation.id === donationId) {
-                        return {
-                            ...donation,
-                            status: 'requested',
-                            requestedBy: userEmail,
-                            requestDate: new Date().toISOString()
-                        };
-                    }
-                    return donation;
-                });
-
-                localStorage.setItem('donations', JSON.stringify(updatedDonations));
-                setDonations(updatedDonations.filter(d => d.status === 'available'));
-
-                // Remove from cart locally as well
-                try { if (removeFromCart) removeFromCart(donationId); } catch (e) { console.warn('removeFromCart failed', e); }
-
-                const donation = donations.find(d => d.id === donationId);
-                alert(`Request saved locally. Contact donar at: ${donation?.contactInformation || 'not provided'}`);
+            if (!res.ok) {
+                const body = await res.json().catch(() => ({}));
+                throw new Error(body.error || `Server responded ${res.status}`);
             }
-        })();
-    };
+
+            const { donation: updated } = await res.json();
+
+            // Update UI
+            const updatedDonations = donations
+                .map(d => d.id === (updated._id || updated.id) ? ({ ...d, ...updated }) : d)
+                .filter(d => d.status === 'available');
+            
+            setDonations(updatedDonations);
+
+            if (removeFromCart) removeFromCart(donationId);
+
+            alert('Request sent! Donor has been notified.');
+
+        } catch (err) {
+            console.warn("Server request failed:", err);
+
+            // FALLBACK LOCAL STORAGE
+            const updatedDonations = donations.map(donation => {
+                if (donation.id === donationId) {
+                    return {
+                        ...donation,
+                        status: 'requested',
+                        requestedBy: userEmail,
+                        requestDate: new Date().toISOString()
+                    };
+                }
+                return donation;
+            });
+
+            localStorage.setItem('donations', JSON.stringify(updatedDonations));
+            setDonations(updatedDonations.filter(d => d.status === 'available'));
+
+            if (removeFromCart) removeFromCart(donationId);
+
+            const donation = donations.find(d => d.id === donationId);
+            alert(`Request saved locally. Contact donor at: ${donation?.contactInformation || 'not provided'}`);
+        }
+    })();
+};
 
     // Close modal helper
     const closeModal = () => setSelectedDonation(null);
@@ -945,6 +949,7 @@ function BrowsePage({ setCurrentPage, addToCart, cart, removeFromCart, updateQty
                     </button>
                 </div>
             </nav>
+
 
             {/* Main Content */}
             <div style={pageContentStyle}>
