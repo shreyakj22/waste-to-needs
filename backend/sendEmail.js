@@ -16,11 +16,15 @@ export async function sendEmail(toEmail, subject, htmlContent) {
   };
 
   try {
-    await sgMail.send(msg);
+    const res = await sgMail.send(msg);
     console.log(`✅ Email sent to ${toEmail}`);
+    // Return SendGrid response for callers that want details
+    return res;
   } catch (error) {
     console.error("❌ Error sending email:", error);
     if (error.response) console.error(error.response.body);
+    // Propagate the error so callers (route handlers) can react (rollback, fallback, etc.)
+    throw error;
   }
 }
 

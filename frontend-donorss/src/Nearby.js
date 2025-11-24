@@ -77,6 +77,12 @@ export default function Nearby({ setCurrentPage }) {
       setError(null);
       try {
         const res = await fetch(`${API_BASE}/api/donations/nearby?lat=${userPos.lat}&lng=${userPos.lng}&radius=${radius}`);
+        if (res.status === 429) {
+          const b = await res.json().catch(() => ({}));
+          alert(b.error || 'You have reached your monthly request limit (3). Please try next month.');
+          setLoading(false);
+          return;
+        }
         if (!res.ok) throw new Error(`Server ${res.status}`);
         const body = await res.json();
         const list = body.donations || [];
@@ -140,6 +146,11 @@ export default function Nearby({ setCurrentPage }) {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ receiverEmail: userEmail })
       });
+      if (res.status === 429) {
+        const b = await res.json().catch(() => ({}));
+        alert(b.error || 'You have reached your monthly request limit (3). Please try next month.');
+        return;
+      }
       if (!res.ok) {
         const b = await res.json().catch(() => ({}));
         throw new Error(b.error || `Server ${res.status}`);

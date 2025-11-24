@@ -800,6 +800,14 @@ function BrowsePage({ setCurrentPage, addToCart, cart, removeFromCart, updateQty
                 body: JSON.stringify({ receiverEmail: userEmail })
             });
 
+            if (res.status === 429) {
+                // Monthly limit reached — show user-friendly popup and stop
+                const body = await res.json().catch(() => ({}));
+                const msg = body.error || 'You have reached your monthly request limit (3). Please try next month.';
+                alert(msg);
+                return;
+            }
+
             if (!res.ok) {
                 const body = await res.json().catch(() => ({}));
                 throw new Error(body.error || `Server responded ${res.status}`);
