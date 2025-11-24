@@ -4,6 +4,7 @@ import AuthPage from './AuthPage';
 import DashboardPage from './Dashboard';
 import NearbyPage from './Nearby';
 
+
 import { API_BASE } from './config';
 
 // =========================================================
@@ -794,7 +795,7 @@ function BrowsePage({ setCurrentPage, addToCart, cart, removeFromCart, updateQty
 
     (async () => {
         try {
-            const res = await fetch(`${API_BASE}/api/donations/${donationId}/request`, {
+const res = await fetch(`${API_BASE}/api/request/${donationId}/request`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ receiverEmail: userEmail })
@@ -1511,6 +1512,7 @@ export default function App() {
 
     return <HomePage setCurrentPage={setCurrentPage} cart={cart} />;
 }
+
 
 // =========================================================
 // --- 2. SPLASH / START PAGE ---
