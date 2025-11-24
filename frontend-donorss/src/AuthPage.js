@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 
 import { API_BASE } from './config';
-
 export default function AuthPage({ setCurrentPage }) {
   const [view, setView] = useState("login");
   const [captcha, setCaptcha] = useState("");
@@ -56,7 +55,9 @@ export default function AuthPage({ setCurrentPage }) {
     }
     
     try {
+    
       const response = await fetch(`${API_BASE}/api/auth/login`, {
+
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

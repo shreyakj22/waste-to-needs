@@ -4,8 +4,6 @@ import AuthPage from './AuthPage';
 import DashboardPage from './Dashboard';
 import NearbyPage from './Nearby';
 
-
-// API base (can be overridden by frontend-donorss/.env)
 import { API_BASE } from './config';
 
 // =========================================================
@@ -608,6 +606,7 @@ function BrowsePage({ setCurrentPage, addToCart, cart, removeFromCart, updateQty
     const [nearbyError, setNearbyError] = useState(null);
     const [userPosNearby, setUserPosNearby] = useState(null);
     const [geoPermState, setGeoPermState] = useState(null);
+    const [showOnlyNearby, setShowOnlyNearby] = useState(false);
 
     useEffect(() => {
         const updateColumns = () => {
@@ -747,6 +746,16 @@ function BrowsePage({ setCurrentPage, addToCart, cart, removeFromCart, updateQty
         const matchesCategory = selectedCategory === 'All' || donation.category === selectedCategory;
         return matchesSearch && matchesCategory && donation.status === 'available';
     });
+
+    // If the user has chosen to view only nearby items, derive the display set from nearbySuggestions
+    const displayDonations = (showOnlyNearby && nearbySuggestions && nearbySuggestions.length > 0)
+        ? // apply same search & category filters to nearbySuggestions
+          nearbySuggestions.filter(d => {
+              const matchesSearch = d.itemTitle.toLowerCase().includes(searchQuery.toLowerCase()) || (d.description || '').toLowerCase().includes(searchQuery.toLowerCase());
+              const matchesCategory = selectedCategory === 'All' || d.category === selectedCategory;
+              return matchesSearch && matchesCategory && (d.status || 'available') === 'available';
+          })
+        : filteredDonations;
 
     // small helper: Haversine to compute distance in km between two lat/lng
     function haversineKm(lat1, lon1, lat2, lon2) {
@@ -971,11 +980,13 @@ function BrowsePage({ setCurrentPage, addToCart, cart, removeFromCart, updateQty
                         ) : (
                             <div style={{ display: 'flex', justifyContent: 'center' }}>
                                 <button onClick={() => {
-                                    // explicit trigger: ask for geolocation again
+                                    // explicit trigger: ask for geolocation again and switch to nearby-only view
                                     if (!navigator.geolocation) return setNearbyError('Geolocation not supported');
                                     setNearbyLoading(true);
                                     navigator.geolocation.getCurrentPosition((pos) => {
-                                        fetchNearbyForCoords(pos.coords.latitude, pos.coords.longitude);
+                                        fetchNearbyForCoords(pos.coords.latitude, pos.coords.longitude)
+                                          .then(() => setShowOnlyNearby(true))
+                                          .catch(() => {});
                                     }, (err) => {
                                         setNearbyLoading(false);
                                         setNearbyError('Geolocation denied or unavailable');
@@ -1037,20 +1048,26 @@ function BrowsePage({ setCurrentPage, addToCart, cart, removeFromCart, updateQty
                             <option>Clothing</option>
                             <option>Other</option>
                         </select>
-                                    <button onClick={() => setCurrentPage('nearby')} style={{ marginLeft: 12, padding: '6px 10px', borderRadius: 8, background: '#10b981', color: '#fff', border: 'none' }}>Show nearby</button>
+                                    {showOnlyNearby ? (
+                                        <button onClick={() => { setShowOnlyNearby(false); setNearbySuggestions([]); setUserPosNearby(null); }} style={{ marginLeft: 12, padding: '6px 10px', borderRadius: 8, background: '#ef4444', color: '#fff', border: 'none' }}>Clear nearby</button>
+                                    ) : null}
                     </div>
                 </div>
 
                 {/* Item Count */}
                 <p style={{ textAlign: 'left', margin: '20px 0', fontSize: '14px', color: '#555' }}>
-                    Showing {filteredDonations.length} items
+                    {showOnlyNearby && nearbySuggestions && nearbySuggestions.length > 0 ? (
+                        `Showing ${displayDonations.length} nearby items`
+                    ) : (
+                        `Showing ${displayDonations.length} items`
+                    )}
                 </p>
 
                 {/* Item Grid */}
-                {filteredDonations.length > 0 ? (
+                {displayDonations.length > 0 ? (
                     <div style={itemGridStyle}>
-                                {filteredDonations.map(donation => (
-                                    <div key={donation.id} style={itemCardStyle} onClick={() => setSelectedDonation(donation)}>
+                                {displayDonations.map(donation => (
+                                    <div key={donation.id || donation._id} style={itemCardStyle} onClick={() => setSelectedDonation(donation)}>
                                         {donation.photos && donation.photos.length > 0 && (
                                             <img
                                                 src={donation.photos[0]}
