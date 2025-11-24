@@ -4,6 +4,7 @@ import AuthPage from './AuthPage';
 import DashboardPage from './Dashboard';
 import NearbyPage from './Nearby';
 
+
 import { API_BASE } from './config';
 
 // =========================================================
@@ -206,10 +207,6 @@ function DonatePage({ setCurrentPage, cart }) {
         condition: '',
         description: '',
         pickupLocation: '',
-        pickupCity: '',
-        postalCode: '',
-        availableFrom: '',
-        availableUntil: '',
         contactInformation: '',
     });
     const [selectedFiles, setSelectedFiles] = useState([]);
@@ -301,39 +298,6 @@ function DonatePage({ setCurrentPage, cart }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        // Validate required fields before processing files
-        const required = [
-            { key: 'itemTitle', label: 'Item Title' },
-            { key: 'category', label: 'Category' },
-            { key: 'condition', label: 'Condition' },
-            { key: 'description', label: 'Description' },
-            { key: 'pickupLocation', label: 'Pickup Location' },
-            { key: 'pickupCity', label: 'Pickup City' },
-            { key: 'postalCode', label: 'Postal Code' },
-            { key: 'contactInformation', label: 'Contact Email' },
-        ];
-
-        const missing = required.filter(r => {
-            const v = (formData[r.key] || '').toString().trim();
-            return v.length === 0;
-        }).map(r => r.label);
-
-        if (selectedFiles.length === 0) {
-            alert('Please upload at least one photo of the item.');
-            return;
-        }
-
-        if (missing.length > 0) {
-            alert('Please fill required fields: ' + missing.join(', '));
-            return;
-        }
-
-        // Validate email format (simple check) — contact must be an email
-        const email = (formData.contactInformation || '').toString().trim();
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            alert('Please provide a valid contact email address.');
-            return;
-        }
         
         // Convert selected files to Base64
         const promises = selectedFiles.map(file => {
@@ -436,18 +400,35 @@ function DonatePage({ setCurrentPage, cart }) {
                         />
                     </div>
 
+                    {/* Category and Condition Row */}
                     <div style={styles.row}>
                         <div style={styles.col}>
-                            <label style={commonStyles.formLabel}>Category <span style={commonStyles.required}>*</span></label>
-                            <select name="category" value={formData.category} onChange={handleChange} required style={commonStyles.formSelect}>
-                                <option value="">Select category</option>
-                                {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                            <label style={commonStyles.formLabel}>
+                                Category <span style={commonStyles.required}>*</span>
+                            </label>
+                            <select
+                                name="category"
+                                value={formData.category}
+                                onChange={handleChange}
+                                required
+                                style={commonStyles.formSelect}
+                            >
+                                <option value="" disabled>Select a category</option>
+                                {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                             </select>
                         </div>
                         <div style={styles.col}>
-                            <label style={commonStyles.formLabel}>Condition <span style={commonStyles.required}>*</span></label>
-                            <select name="condition" value={formData.condition} onChange={handleChange} required style={commonStyles.formSelect}>
-                                <option value="">Select condition</option>
+                            <label style={commonStyles.formLabel}>
+                                Condition <span style={commonStyles.required}>*</span>
+                            </label>
+                            <select
+                                name="condition"
+                                value={formData.condition}
+                                onChange={handleChange}
+                                required
+                                style={commonStyles.formSelect}
+                            >
+                                <option value="" disabled>Select condition</option>
                                 {conditions.map(cond => <option key={cond} value={cond}>{cond}</option>)}
                             </select>
                         </div>
@@ -568,71 +549,17 @@ function DonatePage({ setCurrentPage, cart }) {
                         />
                     </div>
 
-                                    {/* Pickup City & Postal Code */}
-                                    <div style={styles.row}>
-                                        <div style={styles.col}>
-                                            <label style={commonStyles.formLabel}>Pickup City <span style={commonStyles.required}>*</span></label>
-                                            <input
-                                                type="text"
-                                                name="pickupCity"
-                                                value={formData.pickupCity}
-                                                onChange={handleChange}
-                                                placeholder="City (e.g. Seattle)"
-                                                required
-                                                style={commonStyles.formInput}
-                                            />
-                                        </div>
-                                        <div style={styles.col}>
-                                            <label style={commonStyles.formLabel}>Postal Code <span style={commonStyles.required}>*</span></label>
-                                            <input
-                                                type="text"
-                                                name="postalCode"
-                                                value={formData.postalCode}
-                                                onChange={handleChange}
-                                                placeholder="Postal / ZIP code"
-                                                required
-                                                style={commonStyles.formInput}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    {/* Availability dates */}
-                                    <div style={styles.row}>
-                                        <div style={styles.col}>
-                                            <label style={commonStyles.formLabel}>Available From</label>
-                                            <input
-                                                type="date"
-                                                name="availableFrom"
-                                                value={formData.availableFrom}
-                                                onChange={handleChange}
-                                                style={commonStyles.formInput}
-                                            />
-                                        </div>
-                                        <div style={styles.col}>
-                                            <label style={commonStyles.formLabel}>Available Until</label>
-                                            <input
-                                                type="date"
-                                                name="availableUntil"
-                                                value={formData.availableUntil}
-                                                onChange={handleChange}
-                                                style={commonStyles.formInput}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    {/* (Dimensions and weight removed as requested) */}
-
                     {/* Contact Information */}
                     <div style={styles.formGroup}>
                         <label style={commonStyles.formLabel}>
-                            Contact Email <span style={commonStyles.required}>*</span>
+                            Contact Information <span style={commonStyles.required}>*</span>
                         </label>
                         <input
-                            type="email"
+                            type="text"
                             name="contactInformation"
                             value={formData.contactInformation}
                             onChange={handleChange}
-                            placeholder="your@email.com"
+                            placeholder="Email or phone number for receivers to contact you"
                             required
                             style={commonStyles.formInput}
                         />
@@ -821,42 +748,6 @@ function BrowsePage({ setCurrentPage, addToCart, cart, removeFromCart, updateQty
         return matchesSearch && matchesCategory && donation.status === 'available';
     });
 
-    // --- Request limits: helper functions to enforce 3 requests per receiver per calendar month ---
-    const REQUEST_HISTORY_KEY = 'w2n_request_history';
-
-    const getRequestsThisMonth = (email) => {
-        if (!email) return 0;
-        try {
-            const raw = localStorage.getItem(REQUEST_HISTORY_KEY) || '{}';
-            const obj = JSON.parse(raw);
-            const list = Array.isArray(obj[email]) ? obj[email] : [];
-            const now = new Date();
-            const month = now.getMonth();
-            const year = now.getFullYear();
-            return list.filter(ts => {
-                try {
-                    const d = new Date(ts);
-                    return d.getMonth() === month && d.getFullYear() === year;
-                } catch (e) { return false; }
-            }).length;
-        } catch (e) {
-            return 0;
-        }
-    };
-
-    const recordRequest = (email) => {
-        if (!email) return;
-        try {
-            const raw = localStorage.getItem(REQUEST_HISTORY_KEY) || '{}';
-            const obj = JSON.parse(raw);
-            if (!Array.isArray(obj[email])) obj[email] = [];
-            obj[email].push(new Date().toISOString());
-            localStorage.setItem(REQUEST_HISTORY_KEY, JSON.stringify(obj));
-        } catch (e) {
-            // ignore storage errors
-        }
-    };
-
     // If the user has chosen to view only nearby items, derive the display set from nearbySuggestions
     const displayDonations = (showOnlyNearby && nearbySuggestions && nearbySuggestions.length > 0)
         ? // apply same search & category filters to nearbySuggestions
@@ -899,48 +790,15 @@ function BrowsePage({ setCurrentPage, addToCart, cart, removeFromCart, updateQty
         }
     }
 
-    // Helper to format pickup/address details (show city/postal if available)
-    const formatPickup = (d) => {
-        if (!d) return '';
-        const parts = [];
-        if (d.pickupLocation) parts.push(d.pickupLocation);
-        if (d.pickupCity) parts.push(d.pickupCity);
-        if (d.postalCode) parts.push(d.postalCode);
-        return parts.join(', ');
-    };
-
-    const formatAvailability = (d) => {
-        const from = d?.availableFrom ? new Date(d.availableFrom).toLocaleDateString() : null;
-        const to = d?.availableUntil ? new Date(d.availableUntil).toLocaleDateString() : null;
-        if (from && to) return `${from} → ${to}`;
-        if (from) return `From ${from}`;
-        if (to) return `Until ${to}`;
-        return null;
-    };
-
  const handleRequest = (donationId) => {
     const userEmail = localStorage.getItem('userEmail');
 
-    // require logged-in user
-    if (!userEmail) {
-        alert('Please login or register before requesting an item.');
-        setCurrentPage('auth');
-        return;
-    }
-
-    // enforce 3 requests per calendar month
-    const used = getRequestsThisMonth(userEmail);
-    if (used >= 3) {
-        alert('Request limit reached: you have already requested 3 items this month. Please try next month.');
-        return;
-    }
-
     (async () => {
         try {
-            const res = await fetch(`${API_BASE}/api/donations/${donationId}/request`, {
-                method: 'POST',
+const res = await fetch(`${API_BASE}/api/request/${donationId}/request`, {
+                method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ requesterEmail: userEmail, message: '' })
+                body: JSON.stringify({ receiverEmail: userEmail })
             });
 
             if (!res.ok) {
@@ -948,21 +806,21 @@ function BrowsePage({ setCurrentPage, addToCart, cart, removeFromCart, updateQty
                 throw new Error(body.error || `Server responded ${res.status}`);
             }
 
-            const body = await res.json();
-            const updated = body.donation || body.donation || body;
+            const { donation: updated } = await res.json();
 
-            // Update UI: mark item requested locally as well
-            const updatedDonations = donations.map(d => d.id === (updated._id || updated.id) ? ({ ...d, ...updated }) : d);
-            setDonations(updatedDonations.filter(d => d.status === 'available'));
+            // Update UI
+            const updatedDonations = donations
+                .map(d => d.id === (updated._id || updated.id) ? ({ ...d, ...updated }) : d)
+                .filter(d => d.status === 'available');
+            
+            setDonations(updatedDonations);
+
             if (removeFromCart) removeFromCart(donationId);
-
-            // record request usage for limit enforcement
-            recordRequest(userEmail);
 
             alert('Request sent! Donor has been notified.');
 
         } catch (err) {
-            console.warn('Server request failed:', err);
+            console.warn("Server request failed:", err);
 
             // FALLBACK LOCAL STORAGE
             const updatedDonations = donations.map(donation => {
@@ -977,12 +835,10 @@ function BrowsePage({ setCurrentPage, addToCart, cart, removeFromCart, updateQty
                 return donation;
             });
 
-            try { localStorage.setItem('donations', JSON.stringify(updatedDonations)); } catch (e) {}
+            localStorage.setItem('donations', JSON.stringify(updatedDonations));
             setDonations(updatedDonations.filter(d => d.status === 'available'));
-            if (removeFromCart) removeFromCart(donationId);
 
-            // record request even when saved locally
-            recordRequest(userEmail);
+            if (removeFromCart) removeFromCart(donationId);
 
             const donation = donations.find(d => d.id === donationId);
             alert(`Request saved locally. Contact donor at: ${donation?.contactInformation || 'not provided'}`);
@@ -1159,7 +1015,7 @@ function BrowsePage({ setCurrentPage, addToCart, cart, removeFromCart, updateQty
                             {nearbySuggestions.map(d => (
                                 <div key={d._id || d.id} style={{ minWidth: 220, border: '1px solid #eee', borderRadius: 8, padding: 10, background: '#fafafa' }}>
                                     <div style={{ fontWeight: 700 }}>{d.itemTitle}</div>
-                                    <div style={{ fontSize: 12, color: '#555' }}>{formatPickup(d)}</div>
+                                    <div style={{ fontSize: 12, color: '#555' }}>{d.pickupLocation}</div>
                                     <div style={{ marginTop: 6, color: '#444' }}>{d.distanceKm != null ? `${d.distanceKm} km` : ''}</div>
                                     <div style={{ marginTop: 8 }}>
                                         <button onClick={(e) => { e.stopPropagation(); handleRequest(d._id || d.id); }} style={{ ...commonStyles.button('#10b981') }}>Request</button>
@@ -1251,11 +1107,8 @@ function BrowsePage({ setCurrentPage, addToCart, cart, removeFromCart, updateQty
                                                 </span>
                                             </div>
                                             <p style={{ margin: '0 0 8px 0', fontSize: '14px' }}>
-                                                📍 {formatPickup(donation) || donation.pickupLocation}
+                                                📍 {donation.pickupLocation}
                                             </p>
-                                            { (donation.availableFrom || donation.availableUntil) && (
-                                                <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: '#6b7280' }}>Available: {formatAvailability(donation)}</p>
-                                            ) }
                                             <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); handleRequest(donation.id); if (selectedDonation && selectedDonation.id === donation.id) closeModal(); }}
@@ -1311,16 +1164,7 @@ function BrowsePage({ setCurrentPage, addToCart, cart, removeFromCart, updateQty
                                     <span style={{ padding: '6px 10px', backgroundColor: '#e5e7eb', borderRadius: '6px' }}>{selectedDonation.condition}</span>
                                 </div>
 
-                                <p style={{ marginTop: '14px' }}>📍 Pickup: <strong>{formatPickup(selectedDonation) || selectedDonation.pickupLocation}</strong></p>
-                                { (selectedDonation.availableFrom || selectedDonation.availableUntil) && (
-                                    <p style={{ marginTop: '6px' }}>🗓 Available: <strong>{formatAvailability(selectedDonation)}</strong></p>
-                                ) }
-                                { selectedDonation.dimensions && (
-                                    <p style={{ marginTop: '6px' }}>📐 Dimensions: <strong>{selectedDonation.dimensions}</strong></p>
-                                ) }
-                                { selectedDonation.weightKg && (
-                                    <p style={{ marginTop: '6px' }}>⚖️ Weight: <strong>{selectedDonation.weightKg} kg</strong></p>
-                                ) }
+                                <p style={{ marginTop: '14px' }}>📍 Pickup: <strong>{selectedDonation.pickupLocation}</strong></p>
                                 <p>📧 Contact: <strong>{selectedDonation.contactInformation || 'Not provided'}</strong></p>
 
                                 <div style={{ marginTop: '18px', display: 'flex', gap: '12px' }}>
@@ -1660,6 +1504,7 @@ export default function App() {
 
     return <HomePage setCurrentPage={setCurrentPage} cart={cart} />;
 }
+
 
 // =========================================================
 // --- 2. SPLASH / START PAGE ---
