@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
+
+import { API_BASE } from './config';
 export default function AuthPage({ setCurrentPage }) {
   const [view, setView] = useState("login");
   const [captcha, setCaptcha] = useState("");
@@ -53,7 +55,9 @@ export default function AuthPage({ setCurrentPage }) {
     }
     
     try {
-      const response = await fetch('http://localhost:5000/api/donations', {
+    
+      const response = await fetch(`${API_BASE}/api/auth/login`, {
+
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -97,7 +101,8 @@ export default function AuthPage({ setCurrentPage }) {
       return;
     }
     try {
-      const response = await fetch('http://localhost:5000/api/auth/register', {
+      const response = await fetch(`${API_BASE}/api/auth/complete-register`, {
+
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -125,44 +130,57 @@ export default function AuthPage({ setCurrentPage }) {
   };
 
   const sendVerification = async () => {
-    if (!registerEmail) { alert('Enter an email first'); return; }
-    try {
-      const res = await fetch('http://localhost:5000/api/auth/send-verification', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: registerEmail })
-      });
-      if (res.ok) {
-        setVerificationSent(true);
-        setIsVerified(false);
-        setVerificationCodeInput('');
-        // start 30s resend cooldown
-        setResendCooldown(30);
-        if (resendTimerRef.current) clearInterval(resendTimerRef.current);
-        resendTimerRef.current = setInterval(() => {
-          setResendCooldown(s => {
-            if (s <= 1) {
-              clearInterval(resendTimerRef.current);
-              resendTimerRef.current = null;
-              return 0;
-            }
-            return s - 1;
-          });
-        }, 1000);
+  if (!registerName || !registerEmail || !registerPassword) {
+    alert('Please fill name, email, and password first.');
+    return;
+  }
 
-        alert('Verification code sent (if the server is configured). Check your email or server logs in dev.');
-      } else {
-        const body = await res.json();
-        alert(body.error || 'Failed to send verification');
-      }
-    } catch (err) {
-      console.error('sendVerification error', err);
-      alert('Failed to reach server to send verification code');
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        name: registerName, 
+        email: registerEmail, 
+        password: registerPassword 
+      })
+    });
+
+    const data = await res.json();
+
+    if (res.ok && data.success) {
+      setVerificationSent(true);
+      setIsVerified(false);
+      setVerificationCodeInput('');
+
+      setResendCooldown(30);
+      if (resendTimerRef.current) clearInterval(resendTimerRef.current);
+      resendTimerRef.current = setInterval(() => {
+        setResendCooldown((s) => {
+          if (s <= 1) {
+            clearInterval(resendTimerRef.current);
+            resendTimerRef.current = null;
+            return 0;
+          }
+          return s - 1;
+        });
+      }, 1000);
+
+      alert('✅ Verification code sent to your email!');
+    } else {
+      console.error('❌ Server responded with error:', data);
+      alert(data.message || 'Failed to send verification code.');
     }
-  };
 
+  } catch (err) {
+    console.error('🚨 sendVerification error:', err);
+    alert('⚠ Could not reach backend — make sure backend (port 5000) is running.');
+  }
+};
   const verifyCode = async () => {
     if (!registerEmail || !verificationCodeInput) { alert('Provide email and code'); return; }
     try {
-      const res = await fetch('http://localhost:5000/api/auth/verify-code', {
+      const res = await fetch(`${API_BASE}/api/auth/verify`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: registerEmail, code: verificationCodeInput })
       });
       if (res.ok) {
