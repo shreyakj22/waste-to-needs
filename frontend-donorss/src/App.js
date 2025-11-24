@@ -792,13 +792,14 @@ function BrowsePage({ setCurrentPage, addToCart, cart, removeFromCart, updateQty
 
  const handleRequest = (donationId) => {
     const userEmail = localStorage.getItem('userEmail');
+    const receiverName = localStorage.getItem('userName'); // optional, if you store name
 
     (async () => {
         try {
-const res = await fetch(`${API_BASE}/api/request/${donationId}/request`, {
+            const res = await fetch(`${API_BASE}/api/request/${donationId}/request`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ receiverEmail: userEmail })
+                body: JSON.stringify({ receiverEmail: userEmail, receiverName })
             });
 
             if (!res.ok) {
@@ -817,7 +818,7 @@ const res = await fetch(`${API_BASE}/api/request/${donationId}/request`, {
 
             if (removeFromCart) removeFromCart(donationId);
 
-            alert('Request sent! Donor has been notified.');
+            alert('Request sent! Donor and receiver have been notified.');
 
         } catch (err) {
             console.warn("Server request failed:", err);
