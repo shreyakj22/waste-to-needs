@@ -297,6 +297,37 @@ function DonatePage({ setCurrentPage, cart }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        // Validate required fields before processing files
+        const required = [
+            { key: 'itemTitle', label: 'Item Title' },
+            { key: 'category', label: 'Category' },
+            { key: 'condition', label: 'Condition' },
+            { key: 'description', label: 'Description' },
+            { key: 'pickupLocation', label: 'Pickup Location' },
+            { key: 'contactInformation', label: 'Contact Email' },
+        ];
+
+        const missing = required.filter(r => {
+            const v = (formData[r.key] || '').toString().trim();
+            return v.length === 0;
+        }).map(r => r.label);
+
+        if (selectedFiles.length === 0) {
+            alert('Please upload at least one photo of the item.');
+            return;
+        }
+
+        if (missing.length > 0) {
+            alert('Please fill required fields: ' + missing.join(', '));
+            return;
+        }
+
+        // Validate email format (simple check) — contact must be an email
+        const email = (formData.contactInformation || '').toString().trim();
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            alert('Please provide a valid contact email address.');
+            return;
+        }
         
         // Convert selected files to Base64
         const promises = selectedFiles.map(file => {
@@ -399,35 +430,18 @@ function DonatePage({ setCurrentPage, cart }) {
                         />
                     </div>
 
-                    {/* Category and Condition Row */}
                     <div style={styles.row}>
                         <div style={styles.col}>
-                            <label style={commonStyles.formLabel}>
-                                Category <span style={commonStyles.required}>*</span>
-                            </label>
-                            <select
-                                name="category"
-                                value={formData.category}
-                                onChange={handleChange}
-                                required
-                                style={commonStyles.formSelect}
-                            >
-                                <option value="" disabled>Select a category</option>
-                                {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                            <label style={commonStyles.formLabel}>Category <span style={commonStyles.required}>*</span></label>
+                            <select name="category" value={formData.category} onChange={handleChange} required style={commonStyles.formSelect}>
+                                <option value="">Select category</option>
+                                {categories.map(c => <option key={c} value={c}>{c}</option>)}
                             </select>
                         </div>
                         <div style={styles.col}>
-                            <label style={commonStyles.formLabel}>
-                                Condition <span style={commonStyles.required}>*</span>
-                            </label>
-                            <select
-                                name="condition"
-                                value={formData.condition}
-                                onChange={handleChange}
-                                required
-                                style={commonStyles.formSelect}
-                            >
-                                <option value="" disabled>Select condition</option>
+                            <label style={commonStyles.formLabel}>Condition <span style={commonStyles.required}>*</span></label>
+                            <select name="condition" value={formData.condition} onChange={handleChange} required style={commonStyles.formSelect}>
+                                <option value="">Select condition</option>
                                 {conditions.map(cond => <option key={cond} value={cond}>{cond}</option>)}
                             </select>
                         </div>
@@ -551,14 +565,14 @@ function DonatePage({ setCurrentPage, cart }) {
                     {/* Contact Information */}
                     <div style={styles.formGroup}>
                         <label style={commonStyles.formLabel}>
-                            Contact Information <span style={commonStyles.required}>*</span>
+                            Contact Email <span style={commonStyles.required}>*</span>
                         </label>
                         <input
-                            type="text"
+                            type="email"
                             name="contactInformation"
                             value={formData.contactInformation}
                             onChange={handleChange}
-                            placeholder="Email or phone number for receivers to contact you"
+                            placeholder="your@email.com"
                             required
                             style={commonStyles.formInput}
                         />
