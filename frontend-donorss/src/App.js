@@ -206,6 +206,10 @@ function DonatePage({ setCurrentPage, cart }) {
         condition: '',
         description: '',
         pickupLocation: '',
+        pickupCity: '',
+        postalCode: '',
+        availableFrom: '',
+        availableUntil: '',
         contactInformation: '',
     });
     const [selectedFiles, setSelectedFiles] = useState([]);
@@ -304,6 +308,8 @@ function DonatePage({ setCurrentPage, cart }) {
             { key: 'condition', label: 'Condition' },
             { key: 'description', label: 'Description' },
             { key: 'pickupLocation', label: 'Pickup Location' },
+            { key: 'pickupCity', label: 'Pickup City' },
+            { key: 'postalCode', label: 'Postal Code' },
             { key: 'contactInformation', label: 'Contact Email' },
         ];
 
@@ -561,6 +567,60 @@ function DonatePage({ setCurrentPage, cart }) {
                             style={commonStyles.formInput}
                         />
                     </div>
+
+                                    {/* Pickup City & Postal Code */}
+                                    <div style={styles.row}>
+                                        <div style={styles.col}>
+                                            <label style={commonStyles.formLabel}>Pickup City <span style={commonStyles.required}>*</span></label>
+                                            <input
+                                                type="text"
+                                                name="pickupCity"
+                                                value={formData.pickupCity}
+                                                onChange={handleChange}
+                                                placeholder="City (e.g. Seattle)"
+                                                required
+                                                style={commonStyles.formInput}
+                                            />
+                                        </div>
+                                        <div style={styles.col}>
+                                            <label style={commonStyles.formLabel}>Postal Code <span style={commonStyles.required}>*</span></label>
+                                            <input
+                                                type="text"
+                                                name="postalCode"
+                                                value={formData.postalCode}
+                                                onChange={handleChange}
+                                                placeholder="Postal / ZIP code"
+                                                required
+                                                style={commonStyles.formInput}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Availability dates */}
+                                    <div style={styles.row}>
+                                        <div style={styles.col}>
+                                            <label style={commonStyles.formLabel}>Available From</label>
+                                            <input
+                                                type="date"
+                                                name="availableFrom"
+                                                value={formData.availableFrom}
+                                                onChange={handleChange}
+                                                style={commonStyles.formInput}
+                                            />
+                                        </div>
+                                        <div style={styles.col}>
+                                            <label style={commonStyles.formLabel}>Available Until</label>
+                                            <input
+                                                type="date"
+                                                name="availableUntil"
+                                                value={formData.availableUntil}
+                                                onChange={handleChange}
+                                                style={commonStyles.formInput}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* (Dimensions and weight removed as requested) */}
 
                     {/* Contact Information */}
                     <div style={styles.formGroup}>
@@ -839,6 +899,25 @@ function BrowsePage({ setCurrentPage, addToCart, cart, removeFromCart, updateQty
         }
     }
 
+    // Helper to format pickup/address details (show city/postal if available)
+    const formatPickup = (d) => {
+        if (!d) return '';
+        const parts = [];
+        if (d.pickupLocation) parts.push(d.pickupLocation);
+        if (d.pickupCity) parts.push(d.pickupCity);
+        if (d.postalCode) parts.push(d.postalCode);
+        return parts.join(', ');
+    };
+
+    const formatAvailability = (d) => {
+        const from = d?.availableFrom ? new Date(d.availableFrom).toLocaleDateString() : null;
+        const to = d?.availableUntil ? new Date(d.availableUntil).toLocaleDateString() : null;
+        if (from && to) return `${from} → ${to}`;
+        if (from) return `From ${from}`;
+        if (to) return `Until ${to}`;
+        return null;
+    };
+
  const handleRequest = (donationId) => {
     const userEmail = localStorage.getItem('userEmail');
 
@@ -1080,7 +1159,7 @@ function BrowsePage({ setCurrentPage, addToCart, cart, removeFromCart, updateQty
                             {nearbySuggestions.map(d => (
                                 <div key={d._id || d.id} style={{ minWidth: 220, border: '1px solid #eee', borderRadius: 8, padding: 10, background: '#fafafa' }}>
                                     <div style={{ fontWeight: 700 }}>{d.itemTitle}</div>
-                                    <div style={{ fontSize: 12, color: '#555' }}>{d.pickupLocation}</div>
+                                    <div style={{ fontSize: 12, color: '#555' }}>{formatPickup(d)}</div>
                                     <div style={{ marginTop: 6, color: '#444' }}>{d.distanceKm != null ? `${d.distanceKm} km` : ''}</div>
                                     <div style={{ marginTop: 8 }}>
                                         <button onClick={(e) => { e.stopPropagation(); handleRequest(d._id || d.id); }} style={{ ...commonStyles.button('#10b981') }}>Request</button>
@@ -1172,8 +1251,11 @@ function BrowsePage({ setCurrentPage, addToCart, cart, removeFromCart, updateQty
                                                 </span>
                                             </div>
                                             <p style={{ margin: '0 0 8px 0', fontSize: '14px' }}>
-                                                📍 {donation.pickupLocation}
+                                                📍 {formatPickup(donation) || donation.pickupLocation}
                                             </p>
+                                            { (donation.availableFrom || donation.availableUntil) && (
+                                                <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: '#6b7280' }}>Available: {formatAvailability(donation)}</p>
+                                            ) }
                                             <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); handleRequest(donation.id); if (selectedDonation && selectedDonation.id === donation.id) closeModal(); }}
@@ -1229,7 +1311,16 @@ function BrowsePage({ setCurrentPage, addToCart, cart, removeFromCart, updateQty
                                     <span style={{ padding: '6px 10px', backgroundColor: '#e5e7eb', borderRadius: '6px' }}>{selectedDonation.condition}</span>
                                 </div>
 
-                                <p style={{ marginTop: '14px' }}>📍 Pickup: <strong>{selectedDonation.pickupLocation}</strong></p>
+                                <p style={{ marginTop: '14px' }}>📍 Pickup: <strong>{formatPickup(selectedDonation) || selectedDonation.pickupLocation}</strong></p>
+                                { (selectedDonation.availableFrom || selectedDonation.availableUntil) && (
+                                    <p style={{ marginTop: '6px' }}>🗓 Available: <strong>{formatAvailability(selectedDonation)}</strong></p>
+                                ) }
+                                { selectedDonation.dimensions && (
+                                    <p style={{ marginTop: '6px' }}>📐 Dimensions: <strong>{selectedDonation.dimensions}</strong></p>
+                                ) }
+                                { selectedDonation.weightKg && (
+                                    <p style={{ marginTop: '6px' }}>⚖️ Weight: <strong>{selectedDonation.weightKg} kg</strong></p>
+                                ) }
                                 <p>📧 Contact: <strong>{selectedDonation.contactInformation || 'Not provided'}</strong></p>
 
                                 <div style={{ marginTop: '18px', display: 'flex', gap: '12px' }}>
