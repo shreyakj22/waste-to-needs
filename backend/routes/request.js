@@ -12,10 +12,12 @@ router.put("/:itemId/request", async (req, res) => {
     const { receiverEmail, receiverName } = req.body; // Who is requesting
     const itemId = req.params.itemId;
 
+    // Fetch the donation item first
     const item = await Donation.findById(itemId);
     if (!item) return res.status(404).json({ success: false, message: "Item not found" });
+    if (item.status !== "available") return res.status(409).json({ success: false, message: "Item is not available" });
 
-    // Update item status to requested
+    // Mark item as requested
     item.status = "requested";
     item.requestedBy = receiverEmail;
     item.requestDate = new Date();
@@ -40,7 +42,17 @@ router.put("/:itemId/request", async (req, res) => {
     `;
     await sendEmail(donorEmail, "Your item has been requested!", htmlContent);
 
-    return res.json({ success: true, donation: item, message: "Donor notified successfully!" });
+    // Notify the receiver
+    const receiverHtml = `
+      <h2>📨 Request Sent!</h2>
+      <p>You have successfully requested <strong>${item.itemTitle}</strong> from ${item.donorEmail}.</p>
+      <p>Please contact the donor at: <strong>${item.donorEmail}</strong></p>
+      <br/>
+      <p style="color: gray;">Waste2Needs</p>
+    `;
+    await sendEmail(receiverEmail, "Your request has been submitted!", receiverHtml);
+
+    return res.json({ success: true, donation: item, message: "Donor and receiver notified successfully!" });
   } catch (error) {
     console.error("Error in request route:", error);
     return res.status(500).json({ success: false, message: "Server error" });
