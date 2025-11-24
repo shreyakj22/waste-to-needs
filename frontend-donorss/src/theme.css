@@ -1,0 +1,35 @@
+:root{
+	--w2n-bg: #f6f9fb;
+	--w2n-surface: #ffffff;
+	--w2n-primary: #0ea5a4;
+	--w2n-accent: #2563eb;
+	--w2n-muted: #6b7280;
+	--w2n-radius: 10px;
+}
+
+/* Simple card hover effect for item tiles */
+.w2n-item-card{
+	transition: transform .16s ease, box-shadow .16s ease, border-color .12s ease;
+	border-radius: 8px;
+	border: 1px solid rgba(15,23,42,0.04);
+	background: var(--w2n-surface);
+}
+.w2n-item-card:hover{
+	transform: translateY(-8px) scale(1.01);
+	box-shadow: 0 12px 30px rgba(2,6,23,0.08);
+	border-color: rgba(14,165,164,0.12);
+}
+
+/* Nearby suggestion cards */
+.w2n-nearby-card{ transition: transform .16s ease, box-shadow .16s ease; border-radius:8px }
+.w2n-nearby-card:hover { transform: translateY(-6px); box-shadow: 0 10px 24px rgba(2,6,23,0.06); }
+
+/* Photo upload box subtle hover */
+.w2n-photo-box{ transition: border-color .12s ease, box-shadow .12s ease; }
+.w2n-photo-box:hover{ border-color: rgba(14,165,164,0.35); box-shadow: 0 8px 20px rgba(14,165,164,0.04); }
+
+/* Buttons: slight lift on hover, focus ring */
+button{ transition: transform .12s ease, box-shadow .12s ease; }
+button:hover{ transform: translateY(-3px); }
+button:focus{ box-shadow: 0 0 0 4px rgba(14,165,164,0.12); }
+

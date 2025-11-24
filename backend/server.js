@@ -5,7 +5,7 @@ import cors from "cors";
 
 import userRoutes from "./routes/userRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
-import chatRoute from "./routes/chatRoute.js";
+
 import claimRoutes from "./routes/claimRoutes.js";
 import itemRoutes from "./routes/itemRoutes.js";
 import requestRoutes from "./routes/request.js";
@@ -43,7 +43,6 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use("/api/chat", chatRoute);
 app.use("/api", claimRoutes);
 app.use("/api/items", itemRoutes);
 app.use("/api/request", requestRoutes);

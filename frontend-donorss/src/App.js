@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import AuthPage from './AuthPage';
 import DashboardPage from './Dashboard';
 import NearbyPage from './Nearby';
+import './theme.css';
 
 
 import { API_BASE } from './config';
@@ -104,7 +105,7 @@ const commonStyles = {
         fontSize: '16px',
         boxSizing: 'border-box',
         appearance: 'none',
-        backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23333%22%20d%3D%22M287%20170a14.7%2014.7%200%200%201-24%2011L146%2046%2031%20181a14.7%2014.7%200%200%201-24-11%2014.7%2014.7%200%200%201%2011-24L146%204l115%20143a14.7%2014.7%200%200%201%2015%2024z%22%2F%3E%3C%2Fsvg%3E")',
+        backgroundImage: 'url("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTFiwalpCcYPPChM92tj_QDmaXx79Lr9OA4Mg&s")',
         backgroundRepeat: 'no-repeat',
         backgroundPosition: 'right 10px center',
         backgroundSize: '12px',
@@ -1021,7 +1022,7 @@ const res = await fetch(`${API_BASE}/api/request/${donationId}/request`, {
                         </div>
                         <div style={{ display: 'flex', gap: 10, overflowX: 'auto' }}>
                             {nearbySuggestions.map(d => (
-                                <div key={d._id || d.id} style={{ minWidth: 220, border: '1px solid #eee', borderRadius: 8, padding: 10, background: '#fafafa' }}>
+                                <div key={d._id || d.id} className="w2n-nearby-card" style={{ minWidth: 220, border: '1px solid #eee', borderRadius: 8, padding: 10, background: '#fafafa' }}>
                                     <div style={{ fontWeight: 700 }}>{d.itemTitle}</div>
                                     <div style={{ fontSize: 12, color: '#555' }}>{d.pickupLocation}</div>
                                     <div style={{ marginTop: 6, color: '#444' }}>{d.distanceKm != null ? `${d.distanceKm} km` : ''}</div>
@@ -1076,7 +1077,7 @@ const res = await fetch(`${API_BASE}/api/request/${donationId}/request`, {
                 {displayDonations.length > 0 ? (
                     <div style={itemGridStyle}>
                                 {displayDonations.map(donation => (
-                                    <div key={donation.id || donation._id} style={itemCardStyle} onClick={() => setSelectedDonation(donation)}>
+                                    <div key={donation.id || donation._id} className="w2n-item-card" style={itemCardStyle} onClick={() => setSelectedDonation(donation)}>
                                         {donation.photos && donation.photos.length > 0 && (
                                             <img
                                                 src={donation.photos[0]}
@@ -1224,7 +1225,8 @@ function HomePage({ setCurrentPage, cart }) {
             padding: "50px 20px",
             position: "relative",
             backgroundColor: "#f3f4f6", // Grey background
-            backgroundImage: "url('https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?auto=format&fit=crop&q=80')", // Sustainability/recycling themed image
+            backgroundImage: "url('https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?auto=format&fit=crop&q=80')", // Sustainability/recycling 
+            // d image
             backgroundBlendMode: "soft-light",
             backgroundSize: "cover",
             backgroundPosition: "center",
@@ -1532,7 +1534,7 @@ function SplashPage({ setCurrentPage }) {
             flexDirection: 'column',
             minHeight: '100vh',
             background: 'linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.7))',
-            backgroundImage: "url('https://images.unsplash.com/photo-1593113598332-cd288d649433?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2000&q=80')", // Sustainability/recycling themed image
+            backgroundImage: "url('https://plus.unsplash.com/premium_photo-1682310562583-bfc0a85646da?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8OXx8cmVkdWNlJTIwd2FzdGV8ZW58MHx8MHx8fDA%3D')", // Sustainability/recycling themed image
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundBlendMode: 'overlay',
