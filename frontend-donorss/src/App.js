@@ -105,7 +105,7 @@ const commonStyles = {
         fontSize: '16px',
         boxSizing: 'border-box',
         appearance: 'none',
-        backgroundImage: 'url("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTFiwalpCcYPPChM92tj_QDmaXx79Lr9OA4Mg&s")',
+        backgroundImage: 'url("%20181a14.7%2014.7%200%200%201-24-11%2014.7%2014.7%200%200%201%2011-24L146%204l115%20143a14.7%2014.7%200%200%201%2015%2024z%22%2F%3E%3C%2Fsvg%3E")',
         backgroundRepeat: 'no-repeat',
         backgroundPosition: 'right 10px center',
         backgroundSize: '12px',
@@ -793,14 +793,13 @@ function BrowsePage({ setCurrentPage, addToCart, cart, removeFromCart, updateQty
 
  const handleRequest = (donationId) => {
     const userEmail = localStorage.getItem('userEmail');
-    const receiverName = localStorage.getItem('userName'); // optional, if you store name
 
     (async () => {
         try {
-            const res = await fetch(`${API_BASE}/api/request/${donationId}/request`, {
+const res = await fetch(`${API_BASE}/api/request/${donationId}/request`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ receiverEmail: userEmail, receiverName })
+                body: JSON.stringify({ receiverEmail: userEmail })
             });
 
             if (res.status === 429) {
@@ -827,7 +826,7 @@ function BrowsePage({ setCurrentPage, addToCart, cart, removeFromCart, updateQty
 
             if (removeFromCart) removeFromCart(donationId);
 
-            alert('Request sent! Donor and receiver have been notified.');
+            alert('Request sent! Donor has been notified.');
 
         } catch (err) {
             console.warn("Server request failed:", err);
