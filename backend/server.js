@@ -5,10 +5,7 @@ import cors from "cors";
 
 import userRoutes from "./routes/userRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
-<<<<<<< HEAD
 
-=======
->>>>>>> 8c4d20e54cc750c0a9b664ea07a78bee32dc9b34
 import claimRoutes from "./routes/claimRoutes.js";
 import itemRoutes from "./routes/itemRoutes.js";
 import requestRoutes from "./routes/request.js";
@@ -46,10 +43,6 @@ app.use((req, res, next) => {
   next();
 });
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 8c4d20e54cc750c0a9b664ea07a78bee32dc9b34
 app.use("/api", claimRoutes);
 app.use("/api/items", itemRoutes);
 app.use("/api/request", requestRoutes);
