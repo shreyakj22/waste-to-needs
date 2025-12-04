@@ -1291,6 +1291,7 @@ function HomePage({ setCurrentPage, cart }) {
         btnGreen: { // Style for Browse Items Button
             backgroundColor: "#16a34a",
             color: "#fff",
+            
             border: "none",
             padding: "10px 20px",
             borderRadius: "6px",
