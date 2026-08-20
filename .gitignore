@@ -1,1 +1,7 @@
 .vercel
+
+node_modules/
+.env
+backend/.env
+frontend-donorss/.env
+frontend-receivers/.env
