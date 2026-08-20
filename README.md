@@ -6,7 +6,7 @@ A full-stack MERN donation platform that connects donors with people who need re
 
 
 
-🔗 \*\*Live Demo:\*\* \[add your Vercel/deployed link here]
+
 
 
 
@@ -134,11 +134,6 @@ waste-to-needs/
 
 &#x20;  ```
 
-
-
-\## Screenshots
-
-\[Add screenshots or a short GIF of the app here]
 
 
 
